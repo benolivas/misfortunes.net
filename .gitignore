@@ -1,0 +1,13 @@
+# Sensitive files - never commit these
+config.php
+.token
+
+# Dreamhost diagnostic file
+.dh-diag
+
+# System files
+.DS_Store
+Thumbs.db
+
+# VSCode settings (optional - remove if you want to share these)
+.vscode/

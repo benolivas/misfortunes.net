@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>misfortunes — fortune editor</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=Instrument+Serif:ital@0;1&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f2eb;
+    --surface: #fffef9;
+    --border: #d4cfc3;
+    --text: #1a1814;
+    --muted: #7a7570;
+    --accent: #2a2520;
+    --warning-bg: #fff4e0;
+    --warning-border: #e8a000;
+    --warning-text: #7a4a00;
+    --ok-bg: #eef6ee;
+    --ok-border: #5a9e5a;
+    --ok-text: #2a5a2a;
+    --danger-bg: #ffeeed;
+    --danger-border: #cc3333;
+    --danger-text: #7a1a1a;
+  }
+
+  body {
+    font-family: 'IBM Plex Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  /* -- Login overlay -------------------------------------- */
+
+  #login-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(26, 24, 20, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+  }
+
+  #login-box {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    padding: 36px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 340px;
+  }
+
+  #login-box h2 {
+    font-family: 'Instrument Serif', serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 24px;
+    letter-spacing: -0.02em;
+  }
+
+  #login-box p {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  #login-password {
+    width: 100%;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    letter-spacing: 0.1em;
+    transition: border-color 0.15s;
+  }
+  #login-password:focus { border-color: var(--accent); }
+
+  #login-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 10px 18px;
+    background: var(--accent);
+    color: #f5f2eb;
+    border: none;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: background 0.15s;
+  }
+  #login-btn:hover { background: #3d3830; }
+
+  #login-error {
+    font-size: 11px;
+    color: var(--danger-text);
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-border);
+    padding: 7px 12px;
+    display: none;
+  }
+  #login-error.show { display: block; }
+
+  /* -- Header --------------------------------------------- */
+
+  header {
+    grid-column: 1 / -1;
+    background: var(--accent);
+    color: #f5f2eb;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 2px solid #000;
+  }
+
+  header .stats {
+    font-size: 11px;
+    opacity: 0.55;
+    letter-spacing: 0.05em;
+    margin-right: auto;
+  }
+
+  .header-btn {
+    background: transparent;
+    border: 1px solid rgba(245,242,235,0.3);
+    color: #f5f2eb;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 5px 14px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: background 0.15s;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .header-btn:hover { background: rgba(255,255,255,0.1); }
+  .header-btn.push { border-color: rgba(90,158,90,0.6); color: #9fd49f; }
+  .header-btn.push:hover { background: rgba(90,158,90,0.15); }
+  .header-btn.push:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* -- Left panel ----------------------------------------- */
+
+  #list-panel {
+    order: 1;
+    border-right: 1.5px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 53px);
+    overflow: hidden;
+  }
+
+  #list-controls {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #search {
+    width: 100%;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+  }
+  #search:focus { border-color: var(--accent); }
+
+  #filter-row { display: flex; gap: 6px; }
+
+  .filter-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.1s;
+  }
+  .filter-btn.active { background: var(--accent); color: #f5f2eb; border-color: var(--accent); }
+  .filter-btn:hover:not(.active) { border-color: var(--accent); color: var(--text); }
+
+  #fortune-list { overflow-y: auto; flex: 1; }
+
+  .fortune-item {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    transition: background 0.1s;
+  }
+  .fortune-item:hover { background: var(--bg); }
+  .fortune-item.selected { background: #e8e3d8; }
+
+  .item-num {
+    font-size: 10px;
+    color: var(--muted);
+    min-width: 28px;
+    padding-top: 1px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .item-text {
+    font-size: 11px;
+    line-height: 1.5;
+    flex: 1;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    color: var(--text);
+  }
+
+  .item-badge {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+  .badge-ok { background: var(--ok-border); }
+  .badge-warn { background: var(--warning-border); }
+  .badge-long { background: var(--danger-border); }
+
+  /* -- Right panel ---------------------------------------- */
+
+  #edit-panel {
+    order: 2;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 53px);
+    overflow: hidden;
+  }
+
+  #edit-top {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #preview-area {
+    background: #e8e3d8;
+    padding: 32px 24px 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1.5px solid var(--border);
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  #preview-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    align-self: flex-start;
+    text-transform: uppercase;
+  }
+
+  #cookie-mock {
+    position: relative;
+    width: 480px;
+    height: 120px;
+    background: #f5e8b8;
+    border: 1px solid #c8b87a;
+    transform: rotate(-17.8deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin: 16px 0 80px;
+  }
+
+  #cookie-mock::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(90deg, transparent, transparent 98%, rgba(0,0,0,0.03) 100%);
+  }
+
+  #preview-text {
+    font-size: 13px;
+    font-family: sans-serif;
+    font-weight: bold;
+    text-align: center;
+    color: #1a1814;
+    line-height: 1.4;
+    padding: 8px 12px;
+    max-width: 100%;
+    word-break: break-word;
+    filter: blur(0.3px);
+    opacity: 0.88;
+    position: relative;
+    z-index: 1;
+  }
+
+  #fit-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    padding: 7px 14px;
+    border: 1px solid;
+    align-self: flex-start;
+  }
+  #fit-indicator.ok   { background: var(--ok-bg);     border-color: var(--ok-border);     color: var(--ok-text); }
+  #fit-indicator.warn { background: var(--warning-bg); border-color: var(--warning-border); color: var(--warning-text); }
+  #fit-indicator.long { background: var(--danger-bg);  border-color: var(--danger-border);  color: var(--danger-text); }
+
+  #fit-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .ok   #fit-dot { background: var(--ok-border); }
+  .warn #fit-dot { background: var(--warning-border); }
+  .long #fit-dot { background: var(--danger-border); }
+
+  #edit-section {
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    overflow: auto;
+  }
+
+  #edit-section label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  #fortune-editor {
+    width: 100%;
+    min-height: 90px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  #fortune-editor:focus { border-color: var(--accent); }
+
+  .hint { font-size: 10px; color: var(--muted); line-height: 1.5; }
+  .hint code {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 1px 4px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  #action-row { display: flex; gap: 8px; align-items: center; }
+
+  .btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 8px 18px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.1s;
+  }
+  .btn:hover { border-color: var(--accent); background: var(--bg); }
+  .btn.primary { background: var(--accent); color: #f5f2eb; border-color: var(--accent); }
+  .btn.primary:hover { background: #3d3830; }
+  .btn.danger { border-color: var(--danger-border); color: var(--danger-text); }
+  .btn.danger:hover { background: var(--danger-bg); }
+
+  #add-btn {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 8px 18px;
+    border: 1.5px dashed var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    transition: all 0.15s;
+    width: 100%;
+    margin-top: 4px;
+  }
+  #add-btn:hover { border-color: var(--accent); color: var(--text); border-style: solid; }
+
+  #save-confirm { font-size: 10px; color: var(--ok-text); opacity: 0; transition: opacity 0.3s; }
+  #save-confirm.show { opacity: 1; }
+
+  .empty-state {
+    padding: 40px 24px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 2;
+  }
+
+  .arrow-hint::before { content: '<-'; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+
+  /* -- Mobile <=768px ------------------------------------- */
+
+  @media (max-width: 768px) {
+
+    body {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+      min-height: 100vh;
+      overflow-y: auto;
+    }
+
+    header {
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 12px 16px;
+    }
+
+    header .stats {
+      width: 100%;
+      order: 3;
+      margin-right: 0;
+      opacity: 0.6;
+    }
+
+    .header-btn {
+      font-size: 10px;
+      padding: 5px 10px;
+    }
+
+    #edit-panel {
+      order: 1;
+      height: auto;
+      overflow: visible;
+    }
+
+    #edit-top { overflow: visible; }
+
+    #preview-area {
+      padding: 12px 16px;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    #preview-label { display: none; }
+
+    #cookie-mock {
+      width: 100%;
+      height: auto;
+      min-height: 56px;
+      transform: none;
+      margin: 0;
+      border-radius: 4px;
+    }
+
+    #preview-text {
+      font-size: 14px;
+      padding: 12px 16px;
+      filter: none;
+      opacity: 1;
+    }
+
+    #fit-indicator { align-self: stretch; justify-content: center; }
+
+    #edit-section { padding: 12px 16px; overflow: visible; }
+
+    .empty-state { padding: 12px; font-size: 11px; line-height: 1.6; }
+
+    #fortune-editor { min-height: 72px; font-size: 14px; }
+
+    #action-row { flex-wrap: wrap; gap: 8px; }
+
+    .btn { font-size: 12px; padding: 10px 16px; flex: 1; text-align: center; }
+
+    #add-btn { font-size: 12px; padding: 10px; margin-top: 0; }
+
+    #list-panel {
+      order: 2;
+      height: auto;
+      max-height: 50vh;
+      overflow: hidden;
+      border-right: none;
+      border-top: 1.5px solid var(--border);
+    }
+
+    #fortune-list { max-height: calc(50vh - 80px); }
+
+    .fortune-item { padding: 12px 14px; }
+
+    .item-text { font-size: 12px; }
+
+    .filter-btn { font-size: 11px; padding: 6px 12px; flex: 1; text-align: center; }
+
+    .arrow-hint::before { content: 'v'; }
+
+    #login-box { width: calc(100vw - 48px); padding: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Login overlay -->
+<div id="login-overlay">
+  <div id="login-box">
+    <h2>misfortunes editor</h2>
+    <p>Enter your password to continue.</p>
+    <input type="password" id="login-password" placeholder="password" autocomplete="current-password">
+    <div id="login-error">Incorrect password — try again.</div>
+    <button id="login-btn" onclick="attemptLogin()">enter</button>
+  </div>
+</div>
+
+<header>
+  <span class="stats" id="header-stats">loading...</span>
+  <a class="header-btn" href="https://misfortunes.net" target="_blank" rel="noopener">
+    misfortunes.net &#8599;
+  </a>
+  <button class="header-btn push" id="push-btn" onclick="pushToLive()" disabled>
+    push to live
+  </button>
+</header>
+
+<div id="list-panel">
+  <div id="list-controls">
+    <input type="text" id="search" placeholder="search fortunes..." oninput="renderList()">
+    <div id="filter-row">
+      <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">all</button>
+      <button class="filter-btn" data-filter="ok" onclick="setFilter('ok',this)">fits</button>
+      <button class="filter-btn" data-filter="warn" onclick="setFilter('warn',this)">long</button>
+      <button class="filter-btn" data-filter="long" onclick="setFilter('long',this)">overflow</button>
+    </div>
+  </div>
+  <div id="fortune-list"></div>
+</div>
+
+<div id="edit-panel">
+  <div id="edit-top">
+    <div id="preview-area">
+      <span id="preview-label">live preview — cookie slip</span>
+      <div id="cookie-mock">
+        <div id="preview-text">select a fortune to preview</div>
+      </div>
+      <div id="fit-indicator" class="ok">
+        <div id="fit-dot"></div>
+        <span id="fit-text">--</span>
+      </div>
+    </div>
+
+    <div id="edit-section">
+      <div id="no-selection" class="empty-state">
+        <span class="arrow-hint" aria-hidden="true"></span> select a fortune from the list to edit it
+      </div>
+      <div id="edit-form" style="display:none;">
+        <label for="fortune-editor">edit fortune text</label>
+        <textarea id="fortune-editor" oninput="onEdit()" placeholder="Type fortune here. Use <br> for line breaks, <em> for italics."></textarea>
+        <p class="hint" style="margin-top:8px;">
+          Use <code>&lt;br&gt;</code> for a line break &nbsp;.&nbsp; <code>&lt;em&gt;text&lt;/em&gt;</code> for <em>italics</em>
+        </p>
+        <div id="action-row" style="margin-top:12px;">
+          <button class="btn primary" onclick="saveCurrent()">save changes</button>
+          <button class="btn" onclick="stripBrs()">strip &lt;br&gt; tags</button>
+          <button class="btn danger" onclick="deleteCurrent()">delete</button>
+          <span id="save-confirm">saved.</span>
+        </div>
+      </div>
+      <button id="add-btn" onclick="addFortune()">+ add new fortune</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FORTUNE_KEY = 'mf_fortunes_v1';
+const LIVE_URL    = 'https://misfortunes.net/fortuneArray.js';
+const AUTH_URL    = 'auth.php';
+const PUSH_URL    = 'push.php';
+
+let fortunes      = [];
+let selectedIndex = null;
+let currentFilter = 'all';
+let sessionToken  = sessionStorage.getItem('mf_token') || null;
+
+// -- Login ------------------------------------------------
+
+async function attemptLogin() {
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+  const btn      = document.getElementById('login-btn');
+
+  if (!password) return;
+
+  btn.textContent = 'checking...';
+  btn.disabled    = true;
+  errEl.classList.remove('show');
+
+  try {
+    const res  = await fetch(AUTH_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ password })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      errEl.classList.add('show');
+      btn.textContent = 'enter';
+      btn.disabled    = false;
+      document.getElementById('login-password').value = '';
+      document.getElementById('login-password').focus();
+      return;
+    }
+
+    sessionToken = data.token;
+    sessionStorage.setItem('mf_token', sessionToken);
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('push-btn').disabled = false;
+    await fetchFromLive();
+
+  } catch(e) {
+    errEl.textContent = 'Connection error - try again.';
+    errEl.classList.add('show');
+    btn.textContent = 'enter';
+    btn.disabled    = false;
+  }
+}
+
+// Allow Enter key to submit login
+document.getElementById('login-password').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') attemptLogin();
+});
+
+// If already have a token in sessionStorage, skip login and load fresh from live
+if (sessionToken) {
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('push-btn').disabled = false;
+  fetchFromLive();
+}
+
+// -- Loading ----------------------------------------------
+
+async function loadFortunes() {
+  const saved = localStorage.getItem(FORTUNE_KEY);
+  if (saved) {
+    try {
+      fortunes = JSON.parse(saved);
+      renderList();
+      return;
+    } catch(e) {}
+  }
+  await fetchFromLive();
+}
+
+async function fetchFromLive() {
+  document.getElementById('header-stats').textContent = 'fetching from live site...';
+  try {
+    const bust    = '?v=' + Date.now();
+    const res     = await fetch(LIVE_URL + bust);
+    const text    = await res.text();
+    const extracted = new Function(text + '\nreturn fortuneArray;')();
+    if (!Array.isArray(extracted)) throw new Error('could not parse fortuneArray');
+    fortunes = extracted;
+    saveFortunes();
+    renderList();
+  } catch(e) {
+    document.getElementById('header-stats').textContent = 'error loading -- ' + e.message;
+  }
+}
+
+async function reloadFromLive() {
+  if (!confirm('Reload from live site? This will overwrite your locally saved changes.')) return;
+  localStorage.removeItem(FORTUNE_KEY);
+  selectedIndex = null;
+  document.getElementById('preview-text').innerHTML = 'select a fortune to preview';
+  document.getElementById('no-selection').style.display = 'block';
+  document.getElementById('edit-form').style.display   = 'none';
+  await fetchFromLive();
+}
+
+// -- Push to live -----------------------------------------
+
+async function pushToLive() {
+  if (!sessionToken) {
+    alert('Not logged in - please refresh and log in again.');
+    return;
+  }
+
+  const btn = document.getElementById('push-btn');
+  const confirmed = confirm(
+    'Push ' + fortunes.length + ' fortunes to the live site?\n\nThis will overwrite fortuneArray.js immediately.'
+  );
+  if (!confirmed) return;
+
+  btn.textContent = 'pushing...';
+  btn.disabled    = true;
+
+  try {
+    const res  = await fetch(PUSH_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ token: sessionToken, fortuneArray: fortunes })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        alert('Session expired - please refresh and log in again.');
+        sessionStorage.removeItem('mf_token');
+        location.reload();
+        return;
+      }
+      alert('Push failed: ' + (data.error || 'unknown error'));
+      btn.textContent = 'push to live';
+      btn.disabled    = false;
+      return;
+    }
+
+    btn.disabled    = false;
+    btn.textContent = '✓ ' + data.message;
+    setTimeout(() => {
+      btn.textContent = 'push to live';
+    }, 3000);
+
+  } catch(e) {
+    alert('Push failed: ' + e.message);
+    btn.textContent = 'push to live';
+    btn.disabled    = false;
+  }
+}
+
+// -- Persistence ------------------------------------------
+
+function saveFortunes() {
+  localStorage.setItem(FORTUNE_KEY, JSON.stringify(fortunes));
+}
+
+// -- Helpers ----------------------------------------------
+
+function getPlainText(html) {
+  return html.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').trim();
+}
+
+function fitStatus(text) {
+  const len = getPlainText(text).length;
+  if (len <= 80)  return 'ok';
+  if (len <= 110) return 'warn';
+  return 'long';
+}
+
+function fitLabel(text) {
+  const len = getPlainText(text).length;
+  if (len <= 80)  return 'fits well (' + len + ' chars)';
+  if (len <= 110) return 'worth reviewing (' + len + ' chars)';
+  return 'likely too long (' + len + ' chars)';
+}
+
+// -- Rendering --------------------------------------------
+
+function updateStats() {
+  const ok   = fortunes.filter(f => fitStatus(f) === 'ok').length;
+  const warn = fortunes.filter(f => fitStatus(f) === 'warn').length;
+  const long = fortunes.filter(f => fitStatus(f) === 'long').length;
+  document.getElementById('header-stats').textContent =
+    fortunes.length + ' fortunes . ' + ok + ' fit . ' + warn + ' long . ' + long + ' overflow';
+}
+
+function renderList() {
+  const query = document.getElementById('search').value.toLowerCase();
+  const list  = document.getElementById('fortune-list');
+  list.innerHTML = '';
+
+  fortunes.forEach((f, i) => {
+    const plain  = getPlainText(f).toLowerCase();
+    const status = fitStatus(f);
+    if (query && !plain.includes(query)) return;
+    if (currentFilter === 'ok'   && status !== 'ok')   return;
+    if (currentFilter === 'warn' && status !== 'warn') return;
+    if (currentFilter === 'long' && status !== 'long') return;
+
+    const item = document.createElement('div');
+    item.className = 'fortune-item' + (i === selectedIndex ? ' selected' : '');
+    item.onclick   = () => selectFortune(i);
+    item.innerHTML =
+      '<span class="item-num">' + (i + 1) + '</span>' +
+      '<span class="item-text">' + getPlainText(f) + '</span>' +
+      '<div class="item-badge badge-' + status + '"></div>';
+    list.appendChild(item);
+  });
+
+  updateStats();
+}
+
+function setFilter(val, btn) {
+  currentFilter = val;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+}
+
+// -- Selection & editing ----------------------------------
+
+function selectFortune(i) {
+  selectedIndex = i;
+  const f = fortunes[i];
+  document.getElementById('preview-text').innerHTML      = f;
+  document.getElementById('no-selection').style.display  = 'none';
+  document.getElementById('edit-form').style.display     = 'flex';
+  document.getElementById('edit-form').style.flexDirection = 'column';
+  document.getElementById('edit-form').style.gap         = '0';
+  document.getElementById('fortune-editor').value        = f;
+  updateFitIndicator(f);
+  renderList();
+}
+
+function updateFitIndicator(text) {
+  const status = fitStatus(text);
+  document.getElementById('fit-indicator').className = 'fit-indicator ' + status;
+  document.getElementById('fit-text').textContent    = fitLabel(text);
+}
+
+function onEdit() {
+  const val = document.getElementById('fortune-editor').value;
+  document.getElementById('preview-text').innerHTML = val;
+  updateFitIndicator(val);
+}
+
+function saveCurrent() {
+  if (selectedIndex === null) return;
+  fortunes[selectedIndex] = document.getElementById('fortune-editor').value;
+  saveFortunes();
+  renderList();
+  const c = document.getElementById('save-confirm');
+  c.classList.add('show');
+  setTimeout(() => c.classList.remove('show'), 1500);
+}
+
+function deleteCurrent() {
+  if (selectedIndex === null) return;
+  if (!confirm('Delete this fortune?')) return;
+  fortunes.splice(selectedIndex, 1);
+  saveFortunes();
+  selectedIndex = null;
+  document.getElementById('preview-text').innerHTML     = 'select a fortune to preview';
+  document.getElementById('no-selection').style.display = 'block';
+  document.getElementById('edit-form').style.display    = 'none';
+  renderList();
+}
+
+function stripBrs() {
+  const ta  = document.getElementById('fortune-editor');
+  ta.value  = ta.value.replace(/<br\s*\/?>/gi, ' ').replace(/  +/g, ' ').trim();
+  onEdit();
+}
+
+function addFortune() {
+  fortunes.push('New fortune -- edit me');
+  saveFortunes();
+  renderList();
+  selectFortune(fortunes.length - 1);
+  document.getElementById('fortune-editor').focus();
+  document.getElementById('fortune-editor').select();
+  document.getElementById('fortune-list').lastElementChild?.scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>

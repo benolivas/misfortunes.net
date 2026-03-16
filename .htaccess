@@ -1,0 +1,25 @@
+# Enable CORS and disable caching for JS files
+<IfModule mod_headers.c>
+  <FilesMatch "main\.js$">
+    Header set Access-Control-Allow-Origin "*"
+  </FilesMatch>
+  <FilesMatch "fortuneArray\.js$">
+    Header set Access-Control-Allow-Origin "*"
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+</IfModule>
+
+# Block direct access to the editor session token file
+<Files ".token">
+  Require all denied
+</Files>
+
+# Password protection -- enable later
+# <Directory "editor">
+#   AuthType Basic
+#   AuthName "misfortunes editor"
+#   AuthUserFile /home/YOUR_DREAMHOST_USERNAME/.htpasswd
+#   Require valid-user
+# </Directory>

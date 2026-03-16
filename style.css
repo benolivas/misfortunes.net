@@ -1,0 +1,171 @@
+html {
+  margin: 0 auto;
+  max-width: 1200px;
+}
+
+body {
+  background: #ffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body::before {
+  z-index: -1;
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: #000000;
+  /* IE Fallback */
+  background: rgba(0, 0, 0, 0);
+  width: 100%;
+  height: 100%;
+}
+
+.container {
+  position: relative;
+  display: block;
+  margin-top: 22vh;
+}
+
+.fortune {
+  position: absolute;
+  left: 0;
+  top: 0;
+  margin: auto;
+  width: 100%;
+}
+
+.fortune-text {
+  filter: blur(.02em);
+  opacity: 0.85;
+  z-index: 100;
+  position: absolute;
+  color: #000;
+  font-size: min(2.5vw, 30px);
+  font-family: sans-serif;
+  font-weight: bold;
+  text-align: center;
+  left: 15.75em;
+  top: 4em;
+  width: 22.25em;
+  height: 6em;
+  transform: rotate(-17.8deg);
+  max-width: 100%;
+}
+
+/* Apply fonts only to the disclaimer popup */
+
+#age-verify .title, #age-verify button {
+  font-family: 'Instrument Serif', serif; /* Font for titles and buttons */
+}
+
+/* Popup container */
+#age-verify {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+/* Window layout */
+#age-verify .window {
+  background: white;
+  padding-left: 25px;
+  padding-right: 25px;
+  padding-top: 10px;
+  padding-bottom: 5px;
+  text-align: left;
+  max-width: 420px;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+#age-verify .window span:not(.title) {
+  font-family: Arial, Helvetica, sans-serif; /* Fallback fonts */
+  font-size: 17px; /* Adjust the size as needed */
+  font-weight: 500;
+  line-height: 1.2; /* Adjust line height */
+  color: #333; /* Text color, adjust as needed */
+}
+
+/* Optional: Customize copy text further (e.g., add margins or padding) */
+#age-verify .window span:not(.title) {
+  margin-bottom: 10px; /* Space between paragraphs or lines */
+}
+
+/* Title style */
+#age-verify .window .title {
+  font-weight: 400;
+  font-size: 4rem;
+  margin-bottom: 5px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+/* Button layout */
+#age-verify .window button {
+  margin: 10px 5px;
+  padding: 0px 45px;
+  border: none;
+  cursor: pointer;
+  font-size: 2.2rem;
+  border-radius: 3px;
+  width: auto;
+  display: inline-block;
+  transition: background-color 0.01s;
+}
+
+/* Container for buttons (new rule) */
+#age-verify .window .button-container {
+  display: flex;
+  justify-content: center; /* Center buttons horizontally */
+  gap: 10%; /* Add space between the buttons */
+  width: 100%; /* Ensure the buttons take the full width available */
+  margin-top: 10px; /* Add space between text and buttons */
+}
+
+
+/* Button specific styles */
+#age-verify .window .yes {
+  background: #333;
+  color: white;
+}
+
+#age-verify .window .no {
+  background: rgba(255, 255, 255, 0.8);
+  color: black;
+  border: 1px solid #ccc;
+}
+
+#age-verify .window .yes:hover, #age-verify .window .no:hover {
+  background-color: #555;
+}
+
+
+/* Hide modal when dismissed */
+.hidden {
+  display: none !important;
+}
+
+/* Underage box */
+.underBox {
+  display: none;
+}
+
+.under .underBox {
+  display: block;
+}
+
+.under .window > *:not(.underBox) {
+  display: none;
+}
