@@ -66,6 +66,11 @@ function clearSeen() {
     localStorage.removeItem(VISIT_KEY);
 }
 
+// -- Render helper (strip <br> for large-format display) ----
+function renderFortune(el, text) {
+    el.innerHTML = text.replace(/<br\s*\/?>/gi, ' ').replace(/  +/g, ' ').trim();
+}
+
 // -- Fortune logic (four-bucket system) ----------------------------------------
 
 function myFunction() {
@@ -84,7 +89,7 @@ function myFunction() {
             getAdded(a) >= getAdded(b) ? a : b
         );
         const newestText = getText(newest);
-        el.innerHTML = newestText;
+        renderFortune(el, newestText);
         localStorage.setItem(TS_KEY, Date.now().toString());
         saveSeen([newestText]);
         return;
@@ -101,7 +106,7 @@ function myFunction() {
         if (newUnseen.length > 0) {
             const pick     = newUnseen[Math.floor(Math.random() * newUnseen.length)];
             const pickText = getText(pick);
-            el.innerHTML   = pickText;
+            renderFortune(el, pickText);
             seen.push(pickText);
             saveSeen(seen);
             return;
@@ -120,7 +125,7 @@ function myFunction() {
 
     const pick     = oldUnseen[Math.floor(Math.random() * oldUnseen.length)];
     const pickText = getText(pick);
-    el.innerHTML   = pickText;
+    renderFortune(el, pickText);
     seen.push(pickText);
     saveSeen(seen);
 }

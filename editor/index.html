@@ -300,7 +300,7 @@
   #cookie-mock {
     position: relative;
     width: 480px;
-    height: 120px;
+    height: 160px;
     background: #f5e8b8;
     border: 1px solid #c8b87a;
     transform: rotate(-17.8deg);
@@ -308,7 +308,7 @@
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    margin: 16px 0 80px;
+    margin: 16px 0 100px;
     cursor: pointer;
     transition: opacity 0.15s;
   }
@@ -322,17 +322,18 @@
   }
 
   #preview-text {
-    font-size: 13px;
-    font-family: sans-serif;
-    font-weight: bold;
+    font-size: 17px;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 800;
     text-align: center;
     color: #1a1814;
-    line-height: 1.4;
-    padding: 8px 12px;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    padding: 10px 16px;
     max-width: 100%;
     word-break: break-word;
-    filter: blur(0.3px);
-    opacity: 0.88;
+    filter: blur(0.2px);
+    opacity: 0.9;
     position: relative;
     z-index: 1;
   }
@@ -568,6 +569,16 @@
     .arrow-hint::before { content: 'v'; }
 
     #login-box { width: calc(100vw - 48px); padding: 24px; }
+
+    /* Prevent iOS zoom on input focus (triggers when font-size < 16px) */
+    #login-password { font-size: 16px; }
+
+    /* Keep login box above the keyboard */
+    #login-overlay {
+      align-items: flex-start;
+      padding-top: max(10vh, env(safe-area-inset-top, 24px));
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
   }
 </style>
 </head>
