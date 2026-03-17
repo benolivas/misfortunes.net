@@ -7,10 +7,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const ageVerified = Cookies.get('ageVerified');
     if (ageVerified === "true") {
         document.getElementById("age-verify").classList.add("hidden");
+        // Returning visitor — load fortune immediately
+        myFunction();
     }
-
-    // Load the first fortune on page ready
-    myFunction();
 
     // Subsequent fortunes on click
     document.querySelector('.container').addEventListener('click', myFunction);
@@ -19,6 +18,8 @@ document.addEventListener("DOMContentLoaded", function () {
 function overAge() {
     document.getElementById("age-verify").classList.add("hidden");
     Cookies.set('ageVerified', 'true', { expires: 1, path: '/' });
+    // First-time visitor just dismissed the disclaimer — load first fortune now
+    myFunction();
 }
 
 function goBack() {
