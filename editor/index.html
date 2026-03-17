@@ -187,7 +187,7 @@
   }
   #search:focus { border-color: var(--accent); }
 
-  #filter-row { display: flex; gap: 6px; }
+  #filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
 
   .filter-btn {
     font-family: 'IBM Plex Mono', monospace;
@@ -226,15 +226,28 @@
     flex-shrink: 0;
   }
 
+  .item-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
   .item-text {
     font-size: 11px;
     line-height: 1.5;
-    flex: 1;
     overflow: hidden;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     color: var(--text);
+  }
+
+  .item-date {
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
   }
 
   .item-badge {
@@ -296,7 +309,10 @@
     justify-content: center;
     overflow: hidden;
     margin: 16px 0 80px;
+    cursor: pointer;
+    transition: opacity 0.15s;
   }
+  #cookie-mock:hover { opacity: 0.85; }
 
   #cookie-mock::before {
     content: '';
@@ -370,6 +386,33 @@
     transition: border-color 0.15s;
   }
   #fortune-editor:focus { border-color: var(--accent); }
+
+  #date-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  #date-row label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  #fortune-date {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 6px 10px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+    width: 160px;
+  }
+  #fortune-date:focus { border-color: var(--accent); }
 
   .hint { font-size: 10px; color: var(--muted); line-height: 1.5; }
   .hint code {
@@ -546,6 +589,9 @@
   <a class="header-btn" href="https://misfortunes.net" target="_blank" rel="noopener">
     misfortunes.net &#8599;
   </a>
+  <button class="header-btn" id="reload-btn" onclick="reloadFromLive()">
+    reload from live
+  </button>
   <button class="header-btn push" id="push-btn" onclick="pushToLive()" disabled>
     push to live
   </button>
@@ -555,10 +601,11 @@
   <div id="list-controls">
     <input type="text" id="search" placeholder="search fortunes..." oninput="renderList()">
     <div id="filter-row">
-      <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">all</button>
-      <button class="filter-btn" data-filter="ok" onclick="setFilter('ok',this)">fits</button>
-      <button class="filter-btn" data-filter="warn" onclick="setFilter('warn',this)">long</button>
-      <button class="filter-btn" data-filter="long" onclick="setFilter('long',this)">overflow</button>
+      <button class="filter-btn active" data-filter="all"    onclick="setFilter('all',this)">all</button>
+      <button class="filter-btn"        data-filter="ok"     onclick="setFilter('ok',this)">fits</button>
+      <button class="filter-btn"        data-filter="warn"   onclick="setFilter('warn',this)">long</button>
+      <button class="filter-btn"        data-filter="long"   onclick="setFilter('long',this)">overflow</button>
+      <button class="filter-btn"        data-filter="newest" onclick="setFilter('newest',this)">newest</button>
     </div>
   </div>
   <div id="fortune-list"></div>
@@ -568,7 +615,7 @@
   <div id="edit-top">
     <div id="preview-area">
       <span id="preview-label">live preview — cookie slip</span>
-      <div id="cookie-mock">
+      <div id="cookie-mock" onclick="jumpPreview()" title="click for a random fortune">
         <div id="preview-text">select a fortune to preview</div>
       </div>
       <div id="fit-indicator" class="ok">
@@ -587,6 +634,10 @@
         <p class="hint" style="margin-top:8px;">
           Use <code>&lt;br&gt;</code> for a line break &nbsp;.&nbsp; <code>&lt;em&gt;text&lt;/em&gt;</code> for <em>italics</em>
         </p>
+        <div id="date-row" style="margin-top:10px;">
+          <label for="fortune-date">added</label>
+          <input type="date" id="fortune-date" oninput="onDateEdit()">
+        </div>
         <div id="action-row" style="margin-top:12px;">
           <button class="btn primary" onclick="saveCurrent()">save changes</button>
           <button class="btn" onclick="stripBrs()">strip &lt;br&gt; tags</button>
@@ -605,12 +656,29 @@ const LIVE_URL    = 'https://misfortunes.net/fortuneArray.js';
 const AUTH_URL    = 'auth.php';
 const PUSH_URL    = 'push.php';
 
-let fortunes      = [];
+let fortunes      = [];   // array of {text, added} objects
 let selectedIndex = null;
 let currentFilter = 'all';
 let sessionToken  = sessionStorage.getItem('mf_token') || null;
 
-// -- Login ------------------------------------------------
+// -- Format helpers ----------------------------------------------------------
+
+function todayISO() {
+  return new Date().toISOString().split('T')[0];
+}
+
+// Normalise any fortune to {text, added} object regardless of source format.
+function normalise(f) {
+  if (typeof f === 'string') {
+    return { text: f, added: '2026-03-15' };
+  }
+  return {
+    text:  f.text  || '',
+    added: (f.added && /^\d{4}-\d{2}-\d{2}$/.test(f.added)) ? f.added : '2026-03-15'
+  };
+}
+
+// -- Login -------------------------------------------------------------------
 
 async function attemptLogin() {
   const password = document.getElementById('login-password').value;
@@ -654,41 +722,28 @@ async function attemptLogin() {
   }
 }
 
-// Allow Enter key to submit login
 document.getElementById('login-password').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') attemptLogin();
 });
 
-// If already have a token in sessionStorage, skip login and load fresh from live
 if (sessionToken) {
   document.getElementById('login-overlay').style.display = 'none';
   document.getElementById('push-btn').disabled = false;
   fetchFromLive();
 }
 
-// -- Loading ----------------------------------------------
-
-async function loadFortunes() {
-  const saved = localStorage.getItem(FORTUNE_KEY);
-  if (saved) {
-    try {
-      fortunes = JSON.parse(saved);
-      renderList();
-      return;
-    } catch(e) {}
-  }
-  await fetchFromLive();
-}
+// -- Loading -----------------------------------------------------------------
 
 async function fetchFromLive() {
   document.getElementById('header-stats').textContent = 'fetching from live site...';
   try {
-    const bust    = '?v=' + Date.now();
-    const res     = await fetch(LIVE_URL + bust);
-    const text    = await res.text();
+    const bust      = '?v=' + Date.now();
+    const res       = await fetch(LIVE_URL + bust);
+    const text      = await res.text();
     const extracted = new Function(text + '\nreturn fortuneArray;')();
     if (!Array.isArray(extracted)) throw new Error('could not parse fortuneArray');
-    fortunes = extracted;
+    // Auto-migrate: normalise all entries to {text, added} objects
+    fortunes = extracted.map(normalise);
     saveFortunes();
     renderList();
   } catch(e) {
@@ -706,7 +761,7 @@ async function reloadFromLive() {
   await fetchFromLive();
 }
 
-// -- Push to live -----------------------------------------
+// -- Push to live ------------------------------------------------------------
 
 async function pushToLive() {
   if (!sessionToken) {
@@ -714,7 +769,7 @@ async function pushToLive() {
     return;
   }
 
-  const btn = document.getElementById('push-btn');
+  const btn       = document.getElementById('push-btn');
   const confirmed = confirm(
     'Push ' + fortunes.length + ' fortunes to the live site?\n\nThis will overwrite fortuneArray.js immediately.'
   );
@@ -746,9 +801,7 @@ async function pushToLive() {
 
     btn.disabled    = false;
     btn.textContent = '✓ ' + data.message;
-    setTimeout(() => {
-      btn.textContent = 'push to live';
-    }, 3000);
+    setTimeout(() => { btn.textContent = 'push to live'; }, 3000);
 
   } catch(e) {
     alert('Push failed: ' + e.message);
@@ -757,16 +810,16 @@ async function pushToLive() {
   }
 }
 
-// -- Persistence ------------------------------------------
+// -- Persistence -------------------------------------------------------------
 
 function saveFortunes() {
   localStorage.setItem(FORTUNE_KEY, JSON.stringify(fortunes));
 }
 
-// -- Helpers ----------------------------------------------
+// -- Helpers -----------------------------------------------------------------
 
-function getPlainText(html) {
-  return html.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').trim();
+function getPlainText(text) {
+  return text.replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').trim();
 }
 
 function fitStatus(text) {
@@ -783,12 +836,12 @@ function fitLabel(text) {
   return 'likely too long (' + len + ' chars)';
 }
 
-// -- Rendering --------------------------------------------
+// -- Rendering ---------------------------------------------------------------
 
 function updateStats() {
-  const ok   = fortunes.filter(f => fitStatus(f) === 'ok').length;
-  const warn = fortunes.filter(f => fitStatus(f) === 'warn').length;
-  const long = fortunes.filter(f => fitStatus(f) === 'long').length;
+  const ok   = fortunes.filter(f => fitStatus(f.text) === 'ok').length;
+  const warn = fortunes.filter(f => fitStatus(f.text) === 'warn').length;
+  const long = fortunes.filter(f => fitStatus(f.text) === 'long').length;
   document.getElementById('header-stats').textContent =
     fortunes.length + ' fortunes . ' + ok + ' fit . ' + warn + ' long . ' + long + ' overflow';
 }
@@ -798,20 +851,36 @@ function renderList() {
   const list  = document.getElementById('fortune-list');
   list.innerHTML = '';
 
-  fortunes.forEach((f, i) => {
-    const plain  = getPlainText(f).toLowerCase();
-    const status = fitStatus(f);
+  // Build index list, optionally sorted by date descending for 'newest' filter
+  let indices = fortunes.map((_, i) => i);
+  if (currentFilter === 'newest') {
+    indices = indices.slice().sort((a, b) => {
+      const da = fortunes[a].added || '2026-03-15';
+      const db = fortunes[b].added || '2026-03-15';
+      return db.localeCompare(da);
+    });
+  }
+
+  indices.forEach(i => {
+    const f      = fortunes[i];
+    const plain  = getPlainText(f.text).toLowerCase();
+    const status = fitStatus(f.text);
+
     if (query && !plain.includes(query)) return;
     if (currentFilter === 'ok'   && status !== 'ok')   return;
     if (currentFilter === 'warn' && status !== 'warn') return;
     if (currentFilter === 'long' && status !== 'long') return;
+    // 'newest' shows all but sorted — no status filter needed
 
     const item = document.createElement('div');
     item.className = 'fortune-item' + (i === selectedIndex ? ' selected' : '');
     item.onclick   = () => selectFortune(i);
     item.innerHTML =
       '<span class="item-num">' + (i + 1) + '</span>' +
-      '<span class="item-text">' + getPlainText(f) + '</span>' +
+      '<div class="item-body">' +
+        '<span class="item-text">' + getPlainText(f.text) + '</span>' +
+        '<span class="item-date">' + (f.added || '') + '</span>' +
+      '</div>' +
       '<div class="item-badge badge-' + status + '"></div>';
     list.appendChild(item);
   });
@@ -826,19 +895,34 @@ function setFilter(val, btn) {
   renderList();
 }
 
-// -- Selection & editing ----------------------------------
+// -- Selection & editing -----------------------------------------------------
 
 function selectFortune(i) {
   selectedIndex = i;
   const f = fortunes[i];
-  document.getElementById('preview-text').innerHTML      = f;
+  document.getElementById('preview-text').innerHTML      = f.text;
   document.getElementById('no-selection').style.display  = 'none';
   document.getElementById('edit-form').style.display     = 'flex';
   document.getElementById('edit-form').style.flexDirection = 'column';
   document.getElementById('edit-form').style.gap         = '0';
-  document.getElementById('fortune-editor').value        = f;
-  updateFitIndicator(f);
+  document.getElementById('fortune-editor').value        = f.text;
+  document.getElementById('fortune-date').value          = f.added || todayISO();
+  updateFitIndicator(f.text);
   renderList();
+}
+
+function jumpPreview() {
+  if (fortunes.length === 0) return;
+  // Pick a random index different from the current selection if possible
+  let pick = Math.floor(Math.random() * fortunes.length);
+  if (fortunes.length > 1 && pick === selectedIndex) {
+    pick = (pick + 1) % fortunes.length;
+  }
+  selectFortune(pick);
+  // Scroll the selected item into view in the list
+  const list = document.getElementById('fortune-list');
+  const selected = list.querySelector('.fortune-item.selected');
+  if (selected) selected.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
 }
 
 function updateFitIndicator(text) {
@@ -853,9 +937,14 @@ function onEdit() {
   updateFitIndicator(val);
 }
 
+function onDateEdit() {
+  // Just live-updates the date field; saved on saveCurrent()
+}
+
 function saveCurrent() {
   if (selectedIndex === null) return;
-  fortunes[selectedIndex] = document.getElementById('fortune-editor').value;
+  fortunes[selectedIndex].text  = document.getElementById('fortune-editor').value;
+  fortunes[selectedIndex].added = document.getElementById('fortune-date').value || todayISO();
   saveFortunes();
   renderList();
   const c = document.getElementById('save-confirm');
@@ -882,7 +971,7 @@ function stripBrs() {
 }
 
 function addFortune() {
-  fortunes.push('New fortune -- edit me');
+  fortunes.push({ text: 'New fortune -- edit me', added: todayISO() });
   saveFortunes();
   renderList();
   selectFortune(fortunes.length - 1);
