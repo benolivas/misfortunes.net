@@ -1,9 +1,10 @@
 <?php
 // -----------------------------------------------
-// push.php — misfortunes editor push to live
+// push.php -- misfortunes editor push to live
 // -----------------------------------------------
 // Receives the updated fortuneArray from the editor,
 // validates the session token, and writes the file.
+// Supports object format: {text:'...',added:'YYYY-MM-DD'}
 // -----------------------------------------------
 
 header('Content-Type: application/json');
@@ -35,7 +36,7 @@ if (
     time() > $tokenData['expires']
 ) {
     http_response_code(401);
-    echo json_encode(['error' => 'Invalid or expired session — please log in again']);
+    echo json_encode(['error' => 'Invalid or expired session -- please log in again']);
     exit;
 }
 
@@ -46,12 +47,28 @@ if (!is_array($array) || count($array) === 0) {
     exit;
 }
 
+// Detect format: string array (legacy) or object array (new)
+$firstItem  = $array[0];
+$isOldFormat = is_string($firstItem);
+
 // Build the fortuneArray.js content
-$lines = array_map(function($fortune) {
+$lines = array_map(function($fortune) use ($isOldFormat) {
+    if ($isOldFormat) {
+        // Legacy string format -- should not happen after migration, but handle gracefully
+        $text    = $fortune;
+        $added   = '2026-03-15';
+    } else {
+        $text    = isset($fortune['text'])  ? $fortune['text']  : '';
+        $added   = isset($fortune['added']) ? $fortune['added'] : '2026-03-15';
+        // Validate added is YYYY-MM-DD
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $added)) {
+            $added = '2026-03-15';
+        }
+    }
     // Escape backslashes first, then single quotes
-    $escaped = str_replace('\\', '\\\\', $fortune);
-    $escaped = str_replace("'", "\\'", $escaped);
-    return "'" . $escaped . "'";
+    $escapedText = str_replace('\\', '\\\\', $text);
+    $escapedText = str_replace("'", "\\'", $escapedText);
+    return "{text:'" . $escapedText . "',added:'" . $added . "'}";
 }, $array);
 
 $output  = "var fortuneArray = [\n";
@@ -63,7 +80,7 @@ $target = dirname(__DIR__) . '/fortuneArray.js';
 
 if (file_put_contents($target, $output, LOCK_EX) === false) {
     http_response_code(500);
-    echo json_encode(['error' => 'Failed to write file — check server permissions']);
+    echo json_encode(['error' => 'Failed to write file -- check server permissions']);
     exit;
 }
 
