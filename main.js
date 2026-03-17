@@ -9,7 +9,10 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("age-verify").classList.add("hidden");
     }
 
-    // Only trigger fortune cycling when clicking the fortune container
+    // Load the first fortune on page ready
+    myFunction();
+
+    // Subsequent fortunes on click
     document.querySelector('.container').addEventListener('click', myFunction);
 });
 
