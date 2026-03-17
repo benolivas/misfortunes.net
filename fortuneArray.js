@@ -1000,6 +1000,6 @@ var fortuneArray = [
 'Your shadow will move before you do today.',
 'You scrolled to far. You were not supposed to see that.',
 'This moment has already happened.<br>But it went differently the first time.',
-'No maidens?',
+'<br>No maidens?',
 'Take a screenshot, it\'ll last longer.'
 ];
