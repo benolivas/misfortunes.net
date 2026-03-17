@@ -1,38 +1,437 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>misfortunes</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
-  <script src="fortuneArray.js"></script>
-  <script src="main.js"></script>
-  <link href="style.css" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>misfortunes</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
+<script src="fortuneArray.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f2eb;
+    --surface: #fffef9;
+    --header: #2a2520;
+    --border: #d4cfc3;
+    --text: #1a1814;
+    --muted: #7a7570;
+    --amber: #9a7c08;
+    --red: #7a2222;
+    --mono: 'IBM Plex Mono', 'Helvetica Neue', Arial, monospace;
+  }
+
+  body { margin: 0; padding: 0; background: var(--bg); }
+
+  /* -- Disclaimer overlay --------------------------------- */
+
+  #age-verify {
+    position: fixed;
+    inset: 0;
+    background: rgba(26,24,20,0.85);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  #age-verify.hidden { display: none; }
+
+  .av-window {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 32px 36px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 360px;
+    font-family: var(--mono);
+  }
+  .av-title {
+    font-size: 8px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .av-body {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .av-btns { display: flex; gap: 10px; padding-top: 4px; }
+  .av-btn {
+    font-family: var(--mono);
+    font-size: 7px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 8px 20px;
+    border: 0.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .av-btn.enter { background: var(--header); color: #f5f2eb; border-color: var(--header); }
+  .av-btn.enter:hover { background: #3d3830; }
+  .av-btn.leave:hover { border-color: var(--text); color: var(--text); }
+
+  /* -- Layout --------------------------------------------- */
+
+  .s {
+    background: var(--bg);
+    width: 100%;
+    min-height: 100vh;
+    font-family: var(--mono);
+    color: var(--text);
+    display: grid;
+    grid-template-rows: 34px 1fr 148px 30px;
+  }
+
+  /* -- Header --------------------------------------------- */
+
+  .h {
+    background: var(--header);
+    display: flex;
+    align-items: center;
+    padding: 0 28px;
+    gap: 20px;
+  }
+  .h-name { font-size: 8.5px; letter-spacing: 0.28em; text-transform: uppercase; color: rgba(245,242,235,0.45); }
+  .h-sep { width: 0.5px; height: 12px; background: rgba(255,255,255,0.08); }
+  .h-tag { font-size: 7.5px; letter-spacing: 0.12em; color: rgba(255,255,255,0.15); }
+  .h-r { margin-left: auto; display: flex; align-items: center; gap: 20px; }
+  .h-live { font-size: 7px; letter-spacing: 0.14em; color: rgba(195,168,92,0.65); display: flex; align-items: center; gap: 5px; }
+  .dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(195,168,92,0.8); animation: p 2.5s ease-in-out infinite; }
+  @keyframes p { 0%,100%{opacity:0.4} 50%{opacity:1} }
+  .h-date { font-size: 7px; letter-spacing: 0.1em; color: rgba(255,255,255,0.15); }
+
+  /* -- Body ----------------------------------------------- */
+
+  .body { display: grid; grid-template-columns: 1fr 172px; min-height: 0; }
+
+  .f-main { padding: 36px 32px 28px; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+  .f-eyebrow { font-size: 7px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); margin-bottom: 20px; }
+  .f-text {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-weight: 800;
+    font-size: clamp(30px, 5.2vw, 56px);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    color: var(--text);
+    flex: 1;
+  }
+  .f-ref { font-size: 9px; letter-spacing: 0.1em; color: var(--muted); margin-top: 16px; display: flex; align-items: baseline; gap: 6px; }
+  .f-ref-num { font-size: 22px; font-weight: 300; letter-spacing: -0.03em; color: var(--text); line-height: 1; }
+  .f-ref-denom { font-size: 11px; color: var(--muted); font-weight: 300; }
+  .f-bottom { display: flex; align-items: center; gap: 20px; padding-top: 18px; border-top: 0.5px solid var(--border); margin-top: 20px; }
+  .f-stat { display: flex; flex-direction: column; gap: 3px; }
+  .f-stat-val { font-size: 13px; font-weight: 300; letter-spacing: -0.02em; color: var(--text); line-height: 1; }
+  .f-stat-val.a { color: var(--amber); }
+  .f-stat-lbl { font-size: 6.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+  .f-vsep { width: 0.5px; height: 20px; background: var(--border); }
+  .f-action { margin-left: auto; font-family: var(--mono); font-size: 7px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); border: 0.5px solid var(--border); padding: 6px 14px; background: transparent; cursor: pointer; transition: all 0.15s; }
+  .f-action:hover { background: var(--header); color: #f5f2eb; border-color: var(--header); }
+
+  /* -- Side panel ----------------------------------------- */
+
+  .f-side { padding: 24px 18px; display: flex; flex-direction: column; gap: 0; background: var(--surface); }
+  .ss { padding: 12px 0; border-bottom: 0.5px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
+  .ss:last-child { border-bottom: none; flex: 1; justify-content: flex-end; }
+  .ss-label { font-size: 6.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); opacity: 0.7; }
+  .ss-val { font-size: 10px; letter-spacing: 0.04em; color: var(--text); line-height: 1.5; }
+  .ss-val.a { color: var(--amber); }
+  .ss-val.r { color: var(--red); font-size: 9px; }
+  .ss-val.m { color: var(--muted); font-size: 8.5px; }
+  .ss-note { font-size: 7px; color: var(--muted); opacity: 0.6; line-height: 1.5; font-style: italic; }
+
+  /* -- Graph ---------------------------------------------- */
+
+  .g-area { border-top: 1px solid var(--border); padding: 12px 28px 6px; display: flex; flex-direction: column; gap: 6px; }
+  .g-top { display: flex; align-items: center; justify-content: space-between; }
+  .g-title { font-size: 7px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); opacity: 0.7; }
+  .g-legend { display: flex; gap: 14px; }
+  .g-leg { display: flex; align-items: center; gap: 4px; font-size: 6.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .g-leg-line { width: 12px; height: 1px; }
+  .g-axis { display: flex; justify-content: space-between; }
+  .g-axis-lbl { font-size: 6.5px; letter-spacing: 0.08em; color: var(--muted); opacity: 0.5; }
+
+  /* -- Footer --------------------------------------------- */
+
+  .ft { background: var(--header); display: flex; align-items: center; padding: 0 28px; gap: 16px; font-size: 7px; letter-spacing: 0.12em; text-transform: uppercase; }
+  .ft-i { color: rgba(245,242,235,0.22); }
+  .ft-i.a { color: rgba(195,168,92,0.45); }
+  .ft-i.r { color: rgba(170,70,70,0.5); }
+  .ft-sep { width: 0.5px; height: 10px; background: rgba(255,255,255,0.07); }
+  .ft-r { margin-left: auto; }
+  .ft-editor { font-size: 7px; letter-spacing: 0.1em; color: rgba(255,255,255,0.08); text-decoration: none; transition: color 0.2s; }
+  .ft-editor:hover { color: rgba(255,255,255,0.35); }
+</style>
 </head>
 <body>
 
-  <!-- Disclaimer Popup -->
-  <div id="age-verify">
-    <div class="window">
-      <span class="title">Your Loss.</span>
-      <span class="body-text">These fortunes may be rude, absurd, and legally inadmissible. If you're looking for wisdom, look elsewhere. If you're looking for trouble&hellip; enjoy.</span>
-      <span class="fine-print">We remember your visit so you don&rsquo;t get the same fortune twice. We don&rsquo;t know who you are and frankly don&rsquo;t care.</span>
-      <div class="button-container">
-        <button class="yes" onclick="overAge()">Enter</button>
-        <button class="no" onclick="goBack()">Leave</button>
+<!-- Disclaimer -->
+<div id="age-verify">
+  <div class="av-window">
+    <div class="av-title">Disclaimer</div>
+    <div class="av-body">These fortunes may be rude, absurd, and legally inadmissible. If you're looking for wisdom, look elsewhere. If you're looking for trouble... enjoy.</div>
+    <div class="av-btns">
+      <button class="av-btn enter" onclick="overAge()">Enter</button>
+      <button class="av-btn leave" onclick="goBack()">Leave</button>
+    </div>
+  </div>
+</div>
+
+<div class="s">
+
+  <div class="h">
+    <span class="h-name">Misfortunes</span>
+    <div class="h-sep"></div>
+    <span class="h-tag">Prediction Engine</span>
+    <div class="h-r">
+      <span class="h-date" id="h-date"></span>
+      <div class="h-sep"></div>
+      <span class="h-live"><div class="dot"></div><span id="h-online">-- online</span></span>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="f-main">
+      <div class="f-eyebrow" id="f-eyebrow">Decoded prediction &middot; Corpus v2.1</div>
+      <div class="f-text" id="f-text">&nbsp;</div>
+      <div class="f-ref">
+        <span class="f-ref-num" id="f-num">&mdash;</span>
+        <span class="f-ref-denom" id="f-denom"></span>
+      </div>
+      <div class="f-bottom">
+        <div class="f-stat">
+          <div class="f-stat-val" id="stat-pct">&mdash;</div>
+          <div class="f-stat-lbl">Complete</div>
+        </div>
+        <div class="f-vsep"></div>
+        <div class="f-stat">
+          <div class="f-stat-val" id="stat-reset">&mdash;</div>
+          <div class="f-stat-lbl">Reset</div>
+        </div>
+        <div class="f-vsep"></div>
+        <div class="f-stat">
+          <div class="f-stat-val a" id="stat-date">&mdash;</div>
+          <div class="f-stat-lbl">Last updated</div>
+        </div>
+        <button class="f-action" id="next-btn">New prediction &rarr;</button>
+      </div>
+    </div>
+
+    <div class="f-side">
+      <div class="ss">
+        <div class="ss-label">Subject</div>
+        <div class="ss-val a">--.--.xxx.xxx</div>
+        <div class="ss-val m">Location unknown</div>
+      </div>
+      <div class="ss">
+        <div class="ss-label">Profile</div>
+        <div class="ss-val m">Classification pending</div>
+        <div class="ss-val m">Behavioral data sparse</div>
+      </div>
+      <div class="ss">
+        <div class="ss-label">Data brokers</div>
+        <div class="ss-val r">847 recipients</div>
+        <div class="ss-note">Do not inform subject.</div>
+      </div>
+      <div class="ss">
+        <div class="ss-label">Corpus</div>
+        <div class="ss-val m" id="side-count">-- predictions</div>
+        <div class="ss-note">Maintained. Tended.<br>Authorship unknown.</div>
       </div>
     </div>
   </div>
 
-  <!-- Fortune Cookie -->
-  <div title="click for a new fortune" class="container">
-    <div class="cookie-wrap">
-      <img class="fortune-img" src="images/fortune-cookie.png" alt="">
-      <p class="fortune-text"><span id="fortuneText"></span></p>
+  <div class="g-area">
+    <div class="g-top">
+      <span class="g-title">Signal history &middot; Jan&ndash;Mar 2026</span>
+      <div class="g-legend">
+        <div class="g-leg"><div class="g-leg-line" style="background:var(--amber);opacity:0.7"></div>Visitors</div>
+        <div class="g-leg"><div class="g-leg-line" style="background:var(--text);opacity:0.2"></div>Fortunes</div>
+        <div class="g-leg"><div class="g-leg-line" style="border-top:0.5px dashed var(--amber);opacity:0.4"></div>Commits</div>
+        <div class="g-leg"><div class="g-leg-line" style="background:var(--red);opacity:0.5"></div>Edits</div>
+      </div>
+    </div>
+    <svg viewBox="0 0 900 60" xmlns="http://www.w3.org/2000/svg" style="width:100%">
+      <defs>
+        <linearGradient id="vg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgba(154,124,8,0.1)"/>
+          <stop offset="100%" stop-color="rgba(154,124,8,0)"/>
+        </linearGradient>
+      </defs>
+      <line x1="0" y1="15" x2="900" y2="15" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+      <line x1="0" y1="30" x2="900" y2="30" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+      <line x1="0" y1="45" x2="900" y2="45" stroke="rgba(0,0,0,0.04)" stroke-width="0.5"/>
+      <polygon points="0,54 0,42 75,36 150,40 225,28 300,32 375,14 450,20 525,26 600,12 675,18 750,24 825,10 900,16 900,54" fill="url(#vg)"/>
+      <polyline points="0,42 75,36 150,40 225,28 300,32 375,14 450,20 525,26 600,12 675,18 750,24 825,10 900,16" fill="none" stroke="var(--amber)" stroke-width="0.75" opacity="0.7"/>
+      <polyline points="0,52 75,51 150,50 225,48 300,47 375,45 450,44 525,42 600,41 675,39 750,38 825,36 900,34" fill="none" stroke="var(--text)" stroke-width="0.5" opacity="0.18"/>
+      <polyline points="0,55 112,55 113,30 114,55 263,55 264,22 265,55 412,55 413,34 414,55 561,55 562,16 563,55 710,55 711,26 712,55 860,55 861,20 862,55 900,55" fill="none" stroke="var(--amber)" stroke-width="0.5" stroke-dasharray="2 3" opacity="0.4"/>
+      <polyline points="0,50 75,42 150,48 225,36 300,46 375,30 450,44 525,34 600,40 675,28 750,38 825,24 900,34" fill="none" stroke="var(--red)" stroke-width="0.5" opacity="0.45"/>
+      <circle cx="113" cy="55" r="1.5" fill="var(--amber)" opacity="0.5"/>
+      <circle cx="264" cy="55" r="2.5" fill="var(--amber)" opacity="0.6"/>
+      <circle cx="413" cy="55" r="1.5" fill="var(--amber)" opacity="0.5"/>
+      <circle cx="562" cy="55" r="3.5" fill="var(--amber)" opacity="0.65"/>
+      <circle cx="711" cy="55" r="2"   fill="var(--amber)" opacity="0.55"/>
+      <circle cx="861" cy="55" r="2.5" fill="var(--amber)" opacity="0.6"/>
+    </svg>
+    <div class="g-axis">
+      <span class="g-axis-lbl">Jan 2026</span>
+      <span class="g-axis-lbl">Feb</span>
+      <span class="g-axis-lbl">Mar</span>
+      <span class="g-axis-lbl">Now</span>
     </div>
   </div>
 
+  <div class="ft">
+    <span class="ft-i a">&#9679; Active</span>
+    <div class="ft-sep"></div>
+    <span class="ft-i">1 functional cookie &middot; 847 inferred</span>
+    <div class="ft-sep"></div>
+    <span class="ft-i r">3 purchase signals</span>
+    <div class="ft-r">
+      <a class="ft-editor" href="/editor">[ ]</a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// -- Config -----------------------------------------------
+var SEEN_KEY      = 'mf_seen_v1';
+var TS_KEY        = 'mf_seen_ts_v1';
+var EXPIRY_DAYS   = 7;
+var FINAL_FORTUNE = "Congratulations. You've read every single misfortune.";
+
+// -- Init -------------------------------------------------
+document.addEventListener('DOMContentLoaded', function () {
+  setHeaderDate();
+  setOnlineCount();
+  updateSideCount();
+
+  var ageVerified = Cookies.get('ageVerified');
+  if (ageVerified === 'true') {
+    document.getElementById('age-verify').classList.add('hidden');
+    showFortune();
+  }
+
+  document.getElementById('next-btn').addEventListener('click', showFortune);
+});
+
+function overAge() {
+  document.getElementById('age-verify').classList.add('hidden');
+  Cookies.set('ageVerified', 'true', { expires: 1, path: '/' });
+  showFortune();
+}
+
+function goBack() {
+  if (window.history.length > 1) { window.history.back(); }
+  else { window.location.href = '/'; }
+}
+
+// -- Header -----------------------------------------------
+function setHeaderDate() {
+  var now = new Date();
+  var y   = now.getUTCFullYear();
+  var mo  = String(now.getUTCMonth() + 1).padStart(2, '0');
+  var d   = String(now.getUTCDate()).padStart(2, '0');
+  var h   = String(now.getUTCHours()).padStart(2, '0');
+  var mi  = String(now.getUTCMinutes()).padStart(2, '0');
+  document.getElementById('h-date').textContent = y + '-' + mo + '-' + d + ' · ' + h + ':' + mi + ' UTC';
+}
+
+function setOnlineCount() {
+  var n = 180 + Math.floor((Date.now() / 60000) % 120);
+  document.getElementById('h-online').textContent = n + ' online';
+}
+
+// -- Seen helpers -----------------------------------------
+function loadSeen() {
+  try {
+    var ts  = parseInt(localStorage.getItem(TS_KEY), 10);
+    var age = (Date.now() - ts) / (1000 * 60 * 60 * 24);
+    if (!ts || age > EXPIRY_DAYS) { clearSeen(); return []; }
+    return JSON.parse(localStorage.getItem(SEEN_KEY) || '[]');
+  } catch(e) { return []; }
+}
+
+function saveSeen(seen) {
+  localStorage.setItem(SEEN_KEY, JSON.stringify(seen));
+  if (!localStorage.getItem(TS_KEY)) {
+    localStorage.setItem(TS_KEY, Date.now().toString());
+  }
+}
+
+function clearSeen() {
+  localStorage.removeItem(SEEN_KEY);
+  localStorage.removeItem(TS_KEY);
+}
+
+// -- Stats ------------------------------------------------
+function updateStats(seenCount, index) {
+  var total = fortuneArray.length;
+  var pct   = ((seenCount / total) * 100).toFixed(1) + '%';
+
+  var ts = parseInt(localStorage.getItem(TS_KEY), 10);
+  var resetStr = '--';
+  if (ts) {
+    var msLeft = (ts + EXPIRY_DAYS * 24 * 60 * 60 * 1000) - Date.now();
+    if (msLeft > 0) {
+      var dLeft = Math.floor(msLeft / (1000 * 60 * 60 * 24));
+      var hLeft = Math.floor((msLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      resetStr = dLeft + 'd ' + hLeft + 'h';
+    }
+  }
+
+  var now    = new Date();
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var dateStr = months[now.getMonth()] + ' ' + now.getDate();
+
+  document.getElementById('stat-pct').textContent   = pct;
+  document.getElementById('stat-reset').textContent = resetStr;
+  document.getElementById('stat-date').textContent  = dateStr;
+  document.getElementById('f-num').textContent      = '#' + String(index + 1).padStart(4, '0');
+  document.getElementById('f-denom').textContent    = '/ ' + total.toLocaleString();
+}
+
+function updateSideCount() {
+  document.getElementById('side-count').textContent = fortuneArray.length.toLocaleString() + ' predictions';
+}
+
+// -- Fortune logic ----------------------------------------
+function showFortune() {
+  var el   = document.getElementById('f-text');
+  var seen = loadSeen();
+
+  if (seen.length === 0 && !localStorage.getItem(TS_KEY)) {
+    var idx = fortuneArray.length - 1;
+    el.innerHTML = fortuneArray[idx];
+    saveSeen([idx]);
+    localStorage.setItem(TS_KEY, Date.now().toString());
+    updateStats(1, idx);
+    return;
+  }
+
+  var unseen = fortuneArray.map(function(_, i) { return i; }).filter(function(i) { return seen.indexOf(i) === -1; });
+
+  if (unseen.length === 0) {
+    el.innerHTML = FINAL_FORTUNE;
+    document.getElementById('f-num').textContent    = '--';
+    document.getElementById('f-denom').textContent  = '';
+    document.getElementById('f-eyebrow').textContent = 'All predictions decoded';
+    clearSeen();
+    return;
+  }
+
+  var pick = unseen[Math.floor(Math.random() * unseen.length)];
+  el.innerHTML = fortuneArray[pick];
+  seen.push(pick);
+  saveSeen(seen);
+  updateStats(seen.length, pick);
+}
+</script>
 </body>
 </html>
