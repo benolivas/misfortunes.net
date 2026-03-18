@@ -7,7 +7,91 @@
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
   <script src="fortuneArray.js"></script>
-  <script src="main.js"></script>
+  <script>
+  // -- Fortune logic (fully self-contained) ----------------------------
+  const SEEN_KEY    = 'mf_seen_v2';
+  const TS_KEY      = 'mf_seen_ts_v2';
+  const VISIT_KEY   = 'mf_last_visit_v2';
+  const EXPIRY_DAYS = 7;
+  const FINAL       = "Congratulations. You’ve read every single misfortune.";
+
+  function getText(f)    { return typeof f === 'string' ? f : f.text; }
+  function getAdded(f)   { return typeof f === 'string' ? '2026-03-15' : (f.added || '2026-03-15'); }
+  function stripBr(t)    { return t.replace(/<br\s*\/?>/gi, ' ').replace(/  +/g, ' ').trim(); }
+
+  function loadSeen() {
+    try {
+      const ts  = parseInt(localStorage.getItem(TS_KEY), 10);
+      const age = (Date.now() - ts) / 86400000;
+      if (!ts || age > EXPIRY_DAYS) { clearSeen(); return []; }
+      return JSON.parse(localStorage.getItem(SEEN_KEY) || '[]');
+    } catch(e) { return []; }
+  }
+
+  function saveSeen(seen) {
+    localStorage.setItem(SEEN_KEY, JSON.stringify(seen));
+    if (!localStorage.getItem(TS_KEY))
+      localStorage.setItem(TS_KEY, Date.now().toString());
+  }
+
+  function clearSeen() {
+    localStorage.removeItem(SEEN_KEY);
+    localStorage.removeItem(TS_KEY);
+    localStorage.removeItem(VISIT_KEY);
+  }
+
+  function myFunction() {
+    const el    = document.getElementById('fortuneText');
+    const seen  = loadSeen();
+    const today = new Date().toISOString().split('T')[0];
+    const lastVisit = localStorage.getItem(VISIT_KEY) || null;
+    localStorage.setItem(VISIT_KEY, today);
+
+    // First ever visit: show last item in array (newest added)
+    if (seen.length === 0 && !localStorage.getItem(TS_KEY)) {
+      const f    = fortuneArray[fortuneArray.length - 1];
+      const text = getText(f);
+      el.innerHTML = stripBr(text);
+      localStorage.setItem(TS_KEY, Date.now().toString());
+      saveSeen([text]);
+      return;
+    }
+
+    const seenSet = new Set(seen);
+
+    // New since last visit
+    if (lastVisit) {
+      const newUnseen = fortuneArray.filter(f =>
+        getAdded(f) > lastVisit && !seenSet.has(getText(f))
+      );
+      if (newUnseen.length > 0) {
+        const pick = newUnseen[Math.floor(Math.random() * newUnseen.length)];
+        const text = getText(pick);
+        el.innerHTML = stripBr(text);
+        seen.push(text); saveSeen(seen);
+        return;
+      }
+    }
+
+    // Random unseen
+    const unseen = fortuneArray.filter(f => !seenSet.has(getText(f)));
+    if (unseen.length === 0) {
+      el.innerHTML = FINAL;
+      clearSeen();
+      return;
+    }
+    const pick = unseen[Math.floor(Math.random() * unseen.length)];
+    const text = getText(pick);
+    el.innerHTML = stripBr(text);
+    seen.push(text); saveSeen(seen);
+  }
+
+  function overAge() {
+    document.getElementById('age-verify').classList.add('hidden');
+    Cookies.set('ageVerified', 'true', { expires: 1, path: '/' });
+    window._entered = true;
+  }
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -233,8 +317,8 @@
       <span class="body-text">These fortunes may be rude, absurd, and legally inadmissible. If you're looking for wisdom, look elsewhere. If you're looking for trouble&hellip; enjoy.</span>
       <span class="fine-print">We remember your visit to serve you new fortunes each time you return.</span>
       <div class="button-container">
-        <button class="yes" onclick="overAge()">Enter</button>
-        <button class="no" onclick="goBack()">Leave</button>
+        <button class="yes" onclick="event.stopPropagation(); overAge(); window._entered=true;">Enter</button>
+        <button class="no" onclick="event.stopPropagation(); window.history.length > 1 ? window.history.back() : window.location.href='https://www.google.com'">Leave</button>
       </div>
     </div>
   </div>
@@ -501,20 +585,23 @@
       };
 
       document.getElementById('mainBody').addEventListener('click', function(e) {
-        if (!document.getElementById('age-verify').classList.contains('hidden')) return;
+        if (!window._entered && Cookies.get('ageVerified') !== 'true') return;
         if (e.target.closest('.f-side')) return;
         if (e.target.closest('#newPredictionBtn')) return;
         myFunction();
       });
 
-      document.getElementById('newPredictionBtn').addEventListener('click', myFunction);
+      document.getElementById('newPredictionBtn').addEventListener('click', function(e) {
+        if (!window._entered && Cookies.get('ageVerified') !== 'true') return;
+        myFunction();
+      });
 
       updateCorpus();
       updateCounter();
       updateSeverity();
       buildProfile();
       fetchIP();
-      myFunction();
+      myFunction(); // show first fortune on load (silent, no click needed)
     });
   </script>
 
