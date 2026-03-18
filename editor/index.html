@@ -278,64 +278,41 @@
   }
 
   #preview-area {
-    background: #e8e3d8;
-    padding: 32px 24px 24px;
+    background: var(--bg);
+    padding: 24px 24px 20px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 16px;
+    gap: 10px;
     border-bottom: 1.5px solid var(--border);
     flex-shrink: 0;
-    overflow: visible;
   }
 
   #preview-label {
-    font-size: 10px;
-    letter-spacing: 0.1em;
+    font-size: 7px;
+    letter-spacing: 0.2em;
     color: var(--muted);
-    align-self: flex-start;
     text-transform: uppercase;
   }
 
   #cookie-mock {
-    position: relative;
-    width: 480px;
-    height: 160px;
-    background: #f5e8b8;
-    border: 1px solid #c8b87a;
-    transform: rotate(-17.8deg);
+    width: 100%;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    margin: 16px 0 100px;
+    flex-direction: column;
+    gap: 8px;
     cursor: pointer;
-    transition: opacity 0.15s;
+    padding: 4px 0;
   }
-  #cookie-mock:hover { opacity: 0.85; }
-
-  #cookie-mock::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(90deg, transparent, transparent 98%, rgba(0,0,0,0.03) 100%);
-  }
+  #cookie-mock:hover #preview-text { opacity: 0.7; }
 
   #preview-text {
-    font-size: 17px;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     font-weight: 800;
-    text-align: center;
-    color: #1a1814;
-    line-height: 1.1;
+    font-size: clamp(20px, 3vw, 36px);
+    line-height: 1.05;
     letter-spacing: -0.03em;
-    padding: 10px 16px;
-    max-width: 100%;
+    color: var(--text);
     word-break: break-word;
-    filter: blur(0.2px);
-    opacity: 0.9;
-    position: relative;
-    z-index: 1;
+    transition: opacity 0.15s;
   }
 
   #fit-indicator {
@@ -511,29 +488,8 @@
 
     #edit-top { overflow: visible; }
 
-    #preview-area {
-      padding: 12px 16px;
-      gap: 10px;
-      align-items: stretch;
-    }
-
-    #preview-label { display: none; }
-
-    #cookie-mock {
-      width: 100%;
-      height: auto;
-      min-height: 56px;
-      transform: none;
-      margin: 0;
-      border-radius: 4px;
-    }
-
-    #preview-text {
-      font-size: 14px;
-      padding: 12px 16px;
-      filter: none;
-      opacity: 1;
-    }
+    #preview-area { padding: 12px 16px; gap: 8px; }
+    #preview-text { font-size: 18px; }
 
     #fit-indicator { align-self: stretch; justify-content: center; }
 
@@ -603,9 +559,6 @@
   <button class="header-btn" id="reload-btn" onclick="reloadFromLive()">
     reload from live
   </button>
-  <button class="header-btn" id="strip-btn" onclick="bulkStripBrs()">
-    strip all &lt;br&gt;
-  </button>
   <button class="header-btn push" id="push-btn" onclick="pushToLive()" disabled>
     push to live
   </button>
@@ -628,9 +581,9 @@
 <div id="edit-panel">
   <div id="edit-top">
     <div id="preview-area">
-      <span id="preview-label">live preview — cookie slip</span>
+      <span id="preview-label">live preview</span>
       <div id="cookie-mock" onclick="jumpPreview()" title="click for a random fortune">
-        <div id="preview-text">select a fortune to preview</div>
+        <div id="preview-text">Select a fortune to preview</div>
       </div>
       <div id="fit-indicator" class="ok">
         <div id="fit-dot"></div>
@@ -646,7 +599,7 @@
         <label for="fortune-editor">edit fortune text</label>
         <textarea id="fortune-editor" oninput="onEdit()" placeholder="Type fortune here. Use <br> for line breaks, <em> for italics."></textarea>
         <p class="hint" style="margin-top:8px;">
-          Use <code>&lt;br&gt;</code> for a line break &nbsp;.&nbsp; <code>&lt;em&gt;text&lt;/em&gt;</code> for <em>italics</em>
+          Use <code>&lt;em&gt;text&lt;/em&gt;</code> for <em>italics</em>
         </p>
         <div id="date-row" style="margin-top:10px;">
           <label for="fortune-date">added</label>
@@ -654,7 +607,6 @@
         </div>
         <div id="action-row" style="margin-top:12px;">
           <button class="btn primary" onclick="saveCurrent()">save changes</button>
-          <button class="btn" onclick="stripBrs()">strip &lt;br&gt; tags</button>
           <button class="btn danger" onclick="deleteCurrent()">delete</button>
           <span id="save-confirm">saved.</span>
         </div>
@@ -982,29 +934,6 @@ function stripBrs() {
   const ta  = document.getElementById('fortune-editor');
   ta.value  = ta.value.replace(/<br\s*\/?>/gi, ' ').replace(/  +/g, ' ').trim();
   onEdit();
-}
-
-function bulkStripBrs() {
-  const count = fortunes.filter(f => /<br\s*\/?>/.test(f.text)).length;
-  if (count === 0) { alert('No <br> tags found.'); return; }
-  if (!confirm('Strip <br> tags from all ' + count + ' affected fortunes? This cannot be undone.')) return;
-  fortunes = fortunes.map(f => ({
-    ...f,
-    text: f.text.replace(/<br\s*\/?>\s*/gi, ' ').replace(/  +/g, ' ').trim()
-  }));
-  saveFortunes();
-  renderList();
-  if (selectedIndex !== null) {
-    const f = fortunes[selectedIndex];
-    if (f) {
-      document.getElementById('fortune-editor').value = f.text;
-      document.getElementById('preview-text').innerHTML = f.text;
-      updateFitIndicator(f.text);
-    }
-  }
-  const btn = document.getElementById('strip-btn');
-  btn.textContent = '✓ stripped ' + count;
-  setTimeout(() => { btn.textContent = 'strip all <br>'; }, 2500);
 }
 
 function addFortune() {
