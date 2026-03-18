@@ -113,6 +113,7 @@
       -webkit-font-smoothing: antialiased;
       user-select: none;
       -webkit-user-select: none;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     }
 
     /* -- Disclaimer ----------------------------------------- */
@@ -215,6 +216,7 @@
       align-items: center;
       padding: 0 28px;
       gap: 20px;
+      font-family: 'IBM Plex Mono', monospace;
     }
     .h-name { font-size: 8.5px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(245,242,235,0.4); }
     .h-sep { width: 0.5px; height: 12px; background: rgba(255,255,255,0.08); }
@@ -229,24 +231,24 @@
     .body { display: grid; grid-template-columns: 1fr 172px; min-height: 0; cursor: pointer; }
 
     .f-main { padding: 36px 32px 28px; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
-    .f-eyebrow { font-size: 7px; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 20px; }
+    .f-eyebrow { font-size: 7px; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 20px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
     .f-text {
       font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
       font-weight: 700;
       font-size: clamp(24px, 4.5vw, 48px);
       line-height: 1.1;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
       color: var(--text);
       flex: 1;
     }
     .f-ref { display: flex; align-items: baseline; gap: 6px; margin-top: 16px; }
-    .f-ref-num { font-size: 20px; font-weight: 400; letter-spacing: -0.01em; color: var(--text); line-height: 1; }
+    .f-ref-num { font-size: 20px; font-weight: 300; letter-spacing: -0.01em; color: var(--text); line-height: 1; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
     .f-ref-denom { font-size: 11px; color: var(--muted); font-weight: 400; }
     .f-bottom { display: flex; align-items: center; gap: 16px; padding-top: 18px; border-top: 0.5px solid var(--border); margin-top: 20px; }
     .f-stat { display: flex; flex-direction: column; gap: 3px; }
-    .f-stat-val { font-size: 12px; font-weight: 400; letter-spacing: 0; color: var(--text); line-height: 1; }
+    .f-stat-val { font-size: 12px; font-weight: 400; letter-spacing: 0; color: var(--text); line-height: 1; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
     .f-stat-val.a { color: var(--amber); }
-    .f-stat-lbl { font-size: 6.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+    .f-stat-lbl { font-size: 6.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
     .f-vsep { width: 0.5px; height: 20px; background: var(--border); }
     .f-action {
       margin-left: auto;
@@ -267,25 +269,25 @@
     .f-side { padding: 24px 18px; display: flex; flex-direction: column; background: var(--surface); cursor: default; }
     .ss { padding: 12px 0; border-bottom: 0.5px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
     .ss:last-child { border-bottom: none; flex: 1; justify-content: flex-end; }
-    .ss-label { font-size: 6.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); opacity: 0.6; }
-    .ss-val { font-size: 9.5px; letter-spacing: 0.02em; color: var(--text); line-height: 1.5; }
+    .ss-label { font-size: 6.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); opacity: 0.6; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+    .ss-val { font-size: 9.5px; letter-spacing: 0.02em; color: var(--text); line-height: 1.5; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
     .ss-val.a { color: var(--amber); }
     .ss-val.r { color: var(--red); font-size: 9px; }
     .ss-val.m { color: var(--muted); font-size: 8.5px; letter-spacing: 0.01em; }
-    .ss-note { font-size: 7px; color: var(--muted); opacity: 0.6; line-height: 1.5; font-style: italic; }
+    .ss-note { font-size: 7px; color: var(--muted); opacity: 0.6; line-height: 1.5; font-style: italic; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
 
     /* Graph */
     .g-area { border-top: 1px solid var(--border); padding: 12px 28px 6px; display: flex; flex-direction: column; gap: 6px; }
     .g-top { display: flex; align-items: center; justify-content: space-between; }
-    .g-title { font-size: 7px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); opacity: 0.6; }
+    .g-title { font-size: 7px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); opacity: 0.6; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
     .g-legend { display: flex; gap: 14px; }
-    .g-leg { display: flex; align-items: center; gap: 4px; font-size: 6.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+    .g-leg { display: flex; align-items: center; gap: 4px; font-size: 6.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
     .g-leg-line { width: 12px; height: 1px; }
     .g-axis { display: flex; justify-content: space-between; }
-    .g-axis-lbl { font-size: 6.5px; letter-spacing: 0.08em; color: var(--muted); opacity: 0.5; }
+    .g-axis-lbl { font-size: 6.5px; letter-spacing: 0.04em; color: var(--muted); opacity: 0.5; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
 
     /* Footer */
-    .ft { background: var(--header); display: flex; align-items: center; padding: 0 28px; gap: 16px; font-size: 7px; letter-spacing: 0.08em; text-transform: uppercase; }
+    .ft { background: var(--header); display: flex; align-items: center; padding: 0 28px; gap: 16px; font-size: 7px; letter-spacing: 0.08em; text-transform: uppercase; font-family: 'IBM Plex Mono', monospace; }
     .ft-i { color: rgba(245,242,235,0.22); }
     .ft-i.a { color: rgba(195,168,92,0.45); }
     .ft-i.r { color: rgba(170,70,70,0.5); }
