@@ -603,6 +603,9 @@
   <button class="header-btn" id="reload-btn" onclick="reloadFromLive()">
     reload from live
   </button>
+  <button class="header-btn" id="strip-btn" onclick="bulkStripBrs()">
+    strip all &lt;br&gt;
+  </button>
   <button class="header-btn push" id="push-btn" onclick="pushToLive()" disabled>
     push to live
   </button>
@@ -911,7 +914,7 @@ function setFilter(val, btn) {
 function selectFortune(i) {
   selectedIndex = i;
   const f = fortunes[i];
-  document.getElementById('preview-text').innerHTML      = f.text;
+  document.getElementById('preview-text').innerHTML      = f.text.replace(/<br\s*\/?>/gi, ' ').replace(/  +/g, ' ').trim();
   document.getElementById('no-selection').style.display  = 'none';
   document.getElementById('edit-form').style.display     = 'flex';
   document.getElementById('edit-form').style.flexDirection = 'column';
@@ -944,7 +947,7 @@ function updateFitIndicator(text) {
 
 function onEdit() {
   const val = document.getElementById('fortune-editor').value;
-  document.getElementById('preview-text').innerHTML = val;
+  document.getElementById('preview-text').innerHTML = val.replace(/<br\s*\/?>/gi, ' ').replace(/  +/g, ' ').trim();
   updateFitIndicator(val);
 }
 
@@ -979,6 +982,29 @@ function stripBrs() {
   const ta  = document.getElementById('fortune-editor');
   ta.value  = ta.value.replace(/<br\s*\/?>/gi, ' ').replace(/  +/g, ' ').trim();
   onEdit();
+}
+
+function bulkStripBrs() {
+  const count = fortunes.filter(f => /<br\s*\/?>/.test(f.text)).length;
+  if (count === 0) { alert('No <br> tags found.'); return; }
+  if (!confirm('Strip <br> tags from all ' + count + ' affected fortunes? This cannot be undone.')) return;
+  fortunes = fortunes.map(f => ({
+    ...f,
+    text: f.text.replace(/<br\s*\/?>\s*/gi, ' ').replace(/  +/g, ' ').trim()
+  }));
+  saveFortunes();
+  renderList();
+  if (selectedIndex !== null) {
+    const f = fortunes[selectedIndex];
+    if (f) {
+      document.getElementById('fortune-editor').value = f.text;
+      document.getElementById('preview-text').innerHTML = f.text;
+      updateFitIndicator(f.text);
+    }
+  }
+  const btn = document.getElementById('strip-btn');
+  btn.textContent = '✓ stripped ' + count;
+  setTimeout(() => { btn.textContent = 'strip all <br>'; }, 2500);
 }
 
 function addFortune() {
