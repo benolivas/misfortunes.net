@@ -227,7 +227,7 @@
 <body>
 
   <!-- Disclaimer -->
-  <div id="age-verify">
+  <div id="age-verify" onclick="event.stopPropagation()">
     <div class="window">
       <span class="title">Disclaimer</span>
       <span class="body-text">These fortunes may be rude, absurd, and legally inadmissible. If you're looking for wisdom, look elsewhere. If you're looking for trouble&hellip; enjoy.</span>
@@ -240,7 +240,7 @@
   </div>
 
   <!-- Main layout -->
-  <div class="s">
+  <div class="s" id="mainSite">
 
     <div class="h">
       <span class="h-name">Misfortunes</span>
@@ -366,6 +366,19 @@
   </div>
 
   <script>
+    // -- Override goBack to reliably leave the page -------------------------
+    function goBack() {
+      // Try to close tab, fall back to going back, fall back to google
+      try { window.close(); } catch(e) {}
+      setTimeout(function() {
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.href = 'https://www.google.com';
+        }
+      }, 100);
+    }
+
     // -- Header date/time -----------------------------------------------------
     const now = new Date();
     const pad = n => String(n).padStart(2, '0');
@@ -488,6 +501,7 @@
       };
 
       document.getElementById('mainBody').addEventListener('click', function(e) {
+        if (!document.getElementById('age-verify').classList.contains('hidden')) return;
         if (e.target.closest('.f-side')) return;
         if (e.target.closest('#newPredictionBtn')) return;
         myFunction();
