@@ -557,10 +557,15 @@
       if (typeof fortuneArray === 'undefined') return;
       const total = fortuneArray.length;
       try {
+        // Number = array index of current fortune + 1
+        const currentText = document.getElementById('fortuneText').innerHTML;
+        const idx = fortuneArray.findIndex(f =>
+          (typeof f === 'string' ? f : f.text).replace(/<br\s*\/?>/gi, ' ').replace(/  +/g, ' ').trim() === currentText.trim()
+        );
+        const num = idx >= 0 ? idx + 1 : 0;
         const seen = JSON.parse(localStorage.getItem('mf_seen_v2') || '[]');
-        const n    = seen.length;
-        const pct  = ((n / total) * 100).toFixed(1);
-        document.getElementById('fortuneNum').textContent   = '#' + String(n).padStart(4, '0');
+        const pct  = ((seen.length / total) * 100).toFixed(1);
+        document.getElementById('fortuneNum').textContent   = '#' + String(num).padStart(4, '0');
         document.getElementById('fortuneDenom').textContent = '/ ' + total.toLocaleString();
         document.getElementById('statComplete').textContent = pct + '%';
         const ts = parseInt(localStorage.getItem('mf_seen_ts_v2'), 10);
