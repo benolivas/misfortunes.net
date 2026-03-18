@@ -8,7 +8,221 @@
   <script src="https://cdn.jsdelivr.net/npm/js-cookie@3.0.5/dist/js.cookie.min.js"></script>
   <script src="fortuneArray.js"></script>
   <script src="main.js"></script>
-  <link href="style.css" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f2eb;
+      --surface: #fffef9;
+      --header: #2a2520;
+      --border: #d4cfc3;
+      --text: #1a1814;
+      --muted: #7a7570;
+      --amber: #9a7c08;
+      --red: #7a2222;
+      --mono: 'IBM Plex Mono', 'Helvetica Neue', Arial, monospace;
+    }
+
+    body {
+      margin: 0; padding: 0;
+      background: var(--bg);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* -- Disclaimer ----------------------------------------- */
+
+    #age-verify {
+      position: fixed;
+      inset: 0;
+      background: rgba(20,18,14,0.82);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 24px;
+    }
+
+    #age-verify .window {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      padding: 28px 32px 22px;
+      max-width: 420px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      font-family: var(--mono);
+    }
+
+    #age-verify .title {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: clamp(2.2rem, 8vw, 3.2rem);
+      line-height: 1.1;
+      color: var(--text);
+    }
+
+    #age-verify .body-text {
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+
+    #age-verify .fine-print {
+      font-size: 10px;
+      line-height: 1.6;
+      color: var(--muted);
+      border-top: 0.5px solid var(--border);
+      padding-top: 10px;
+      width: 100%;
+      letter-spacing: 0.02em;
+    }
+
+    #age-verify .button-container {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    #age-verify button {
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      padding: 8px 0;
+      border-radius: 0;
+      cursor: pointer;
+      flex: 1;
+      border: 1px solid transparent;
+      transition: background 0.12s, color 0.12s;
+    }
+
+    #age-verify .yes { background: var(--header); color: #f5f2eb; border-color: var(--header); }
+    #age-verify .yes:hover { background: #3d3830; }
+    #age-verify .no { background: transparent; color: var(--text); border-color: var(--border); }
+    #age-verify .no:hover { background: var(--bg); }
+
+    .hidden { display: none !important; }
+
+    /* -- Layout --------------------------------------------- */
+
+    .s {
+      width: 100%;
+      min-height: 100vh;
+      font-family: var(--mono);
+      color: var(--text);
+      display: grid;
+      grid-template-rows: 34px 1fr 148px 30px;
+    }
+
+    /* Header */
+    .h {
+      background: var(--header);
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      gap: 20px;
+    }
+    .h-name { font-size: 8.5px; letter-spacing: 0.28em; text-transform: uppercase; color: rgba(245,242,235,0.45); }
+    .h-sep { width: 0.5px; height: 12px; background: rgba(255,255,255,0.08); }
+    .h-tag { font-size: 7.5px; letter-spacing: 0.12em; color: rgba(255,255,255,0.15); }
+    .h-r { margin-left: auto; display: flex; align-items: center; gap: 20px; }
+    .h-live { font-size: 7px; letter-spacing: 0.14em; color: rgba(195,168,92,0.65); display: flex; align-items: center; gap: 5px; }
+    .h-date { font-size: 7px; letter-spacing: 0.1em; color: rgba(255,255,255,0.15); }
+    .dot { width: 4px; height: 4px; border-radius: 50%; background: rgba(195,168,92,0.8); animation: pulse 2.5s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
+
+    /* Body */
+    .body { display: grid; grid-template-columns: 1fr 172px; min-height: 0; cursor: pointer; }
+
+    .f-main { padding: 36px 32px 28px; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+    .f-eyebrow { font-size: 7px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); margin-bottom: 20px; }
+    .f-text {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-weight: 800;
+      font-size: clamp(28px, 5.2vw, 56px);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+      color: var(--text);
+      flex: 1;
+    }
+    .f-ref { display: flex; align-items: baseline; gap: 6px; margin-top: 16px; }
+    .f-ref-num { font-size: 22px; font-weight: 300; letter-spacing: -0.03em; color: var(--text); line-height: 1; }
+    .f-ref-denom { font-size: 11px; color: var(--muted); font-weight: 300; }
+    .f-bottom { display: flex; align-items: center; gap: 20px; padding-top: 18px; border-top: 0.5px solid var(--border); margin-top: 20px; }
+    .f-stat { display: flex; flex-direction: column; gap: 3px; }
+    .f-stat-val { font-size: 13px; font-weight: 300; letter-spacing: -0.02em; color: var(--text); line-height: 1; }
+    .f-stat-val.a { color: var(--amber); }
+    .f-stat-lbl { font-size: 6.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+    .f-vsep { width: 0.5px; height: 20px; background: var(--border); }
+    .f-action {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: 7px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 0.5px solid var(--border);
+      padding: 6px 14px;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .f-action:hover { background: var(--header); color: #f5f2eb; border-color: var(--header); }
+
+    /* Side panel */
+    .f-side { padding: 24px 18px; display: flex; flex-direction: column; background: var(--surface); cursor: default; }
+    .ss { padding: 12px 0; border-bottom: 0.5px solid var(--border); display: flex; flex-direction: column; gap: 5px; }
+    .ss:last-child { border-bottom: none; flex: 1; justify-content: flex-end; }
+    .ss-label { font-size: 6.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); opacity: 0.7; }
+    .ss-val { font-size: 10px; letter-spacing: 0.04em; color: var(--text); line-height: 1.5; }
+    .ss-val.a { color: var(--amber); }
+    .ss-val.r { color: var(--red); font-size: 9px; }
+    .ss-val.m { color: var(--muted); font-size: 8.5px; }
+    .ss-note { font-size: 7px; color: var(--muted); opacity: 0.6; line-height: 1.5; font-style: italic; }
+
+    /* Graph */
+    .g-area { border-top: 1px solid var(--border); padding: 12px 28px 6px; display: flex; flex-direction: column; gap: 6px; }
+    .g-top { display: flex; align-items: center; justify-content: space-between; }
+    .g-title { font-size: 7px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); opacity: 0.7; }
+    .g-legend { display: flex; gap: 14px; }
+    .g-leg { display: flex; align-items: center; gap: 4px; font-size: 6.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+    .g-leg-line { width: 12px; height: 1px; }
+    .g-axis { display: flex; justify-content: space-between; }
+    .g-axis-lbl { font-size: 6.5px; letter-spacing: 0.08em; color: var(--muted); opacity: 0.5; }
+
+    /* Footer */
+    .ft { background: var(--header); display: flex; align-items: center; padding: 0 28px; gap: 16px; font-size: 7px; letter-spacing: 0.12em; text-transform: uppercase; }
+    .ft-i { color: rgba(245,242,235,0.22); }
+    .ft-i.a { color: rgba(195,168,92,0.45); }
+    .ft-i.r { color: rgba(170,70,70,0.5); }
+    .ft-sep { width: 0.5px; height: 10px; background: rgba(255,255,255,0.07); }
+    .ft-r { margin-left: auto; }
+    .ft-editor { font-size: 7px; letter-spacing: 0.1em; color: rgba(255,255,255,0.08); text-decoration: none; transition: color 0.2s; }
+    .ft-editor:hover { color: rgba(255,255,255,0.35); }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      .s { grid-template-rows: 34px 1fr auto 148px 30px; }
+      .body { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+      .f-main { padding: 24px 20px 20px; border-right: none; border-bottom: 1px solid var(--border); }
+      .f-text { font-size: clamp(24px, 7vw, 40px); }
+      .f-side { padding: 16px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 0; border-bottom: 1px solid var(--border); }
+      .ss { padding: 10px 0; }
+      .ss:last-child { flex: unset; justify-content: unset; }
+      .f-bottom { flex-wrap: wrap; gap: 14px; }
+      .f-action { margin-left: 0; }
+      .g-legend { display: none; }
+      .ft { flex-wrap: wrap; padding: 8px 20px; height: auto; gap: 8px; }
+    }
+  </style>
 </head>
 <body>
 
@@ -152,24 +366,21 @@
   </div>
 
   <script>
-    // -- Date/time in header --------------------------------------------------
+    // -- Header date/time -----------------------------------------------------
     const now = new Date();
     const pad = n => String(n).padStart(2, '0');
     document.getElementById('headerDate').textContent =
       now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) +
       ' \u00b7 ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ' UTC';
 
-    // -- Online count (plausible placeholder) ---------------------------------
+    // -- Online count (placeholder) -------------------------------------------
     document.getElementById('onlineCount').textContent =
       Math.floor(Math.random() * 180 + 80);
 
     // -- Severity labels ------------------------------------------------------
     const severities = [
-      'Severity moderate',
-      'Severity low',
-      'Severity elevated',
-      'Severity unknown',
-      'Severity indeterminate',
+      'Severity moderate', 'Severity low', 'Severity elevated',
+      'Severity unknown', 'Severity indeterminate',
     ];
     function updateSeverity() {
       document.getElementById('severityLabel').textContent =
@@ -183,51 +394,46 @@
       const visits = parseInt(localStorage.getItem('mf_visit_count') || '0', 10) + 1;
       localStorage.setItem('mf_visit_count', visits);
 
-      const lines = [];
+      let line1 = '', line2 = '';
 
-      // Time of day
-      if (hour >= 0 && hour < 5)       lines.push('Late night session');
-      else if (hour >= 5 && hour < 9)  lines.push('Early riser');
-      else if (hour >= 22)             lines.push('Night owl');
+      if      (hour >= 0 && hour < 5)  line1 = 'Late night session';
+      else if (hour >= 5 && hour < 9)  line1 = 'Early riser';
+      else if (hour >= 22)             line1 = 'Night owl';
+      else                             line1 = 'Daytime subject';
 
-      // Visit frequency
-      if (visits === 1)      lines.push('First contact');
-      else if (visits <= 3)  lines.push('Returning subject');
-      else if (visits <= 10) lines.push('Repeat visitor');
-      else                   lines.push('Habitual');
+      if      (visits === 1)   line2 = 'First contact';
+      else if (visits <= 3)    line2 = 'Returning subject';
+      else if (visits <= 10)   line2 = 'Repeat visitor';
+      else                     line2 = 'Habitual';
 
-      // Fortune consumption
-      if (seen === 0)        lines.push('Uninitialized');
-      else if (seen < 10)    lines.push('Cautious');
-      else if (seen < 50)    lines.push('Engaged');
-      else if (seen < 200)   lines.push('Compulsive');
-      else                   lines.push('Obsessive');
+      if      (seen >= 200)  line2 += ' \u00b7 Obsessive';
+      else if (seen >= 50)   line2 += ' \u00b7 Compulsive';
+      else if (seen >= 10)   line2 += ' \u00b7 Engaged';
+      else if (seen > 0)     line2 += ' \u00b7 Cautious';
 
-      document.getElementById('sideProfile1').textContent = lines[0] || 'Classification pending';
-      document.getElementById('sideProfile2').textContent = lines[1] || '';
+      document.getElementById('sideProfile1').textContent = line1;
+      document.getElementById('sideProfile2').textContent = line2;
     }
 
-    // -- IP + location lookup -------------------------------------------------
+    // -- IP lookup ------------------------------------------------------------
     async function fetchIP() {
       try {
         const res  = await fetch('/ip.php');
         const data = await res.json();
-        if (data.status === 'success' || data.ip) {
-          // Mask middle octets for aesthetic
-          const parts = (data.ip || '').split('.');
+        if (data.ip && data.ip !== 'unknown') {
+          const parts  = data.ip.split('.');
           const masked = parts.length === 4
             ? parts[0] + '.' + parts[1] + '.xxx.xxx'
             : data.ip;
           document.getElementById('sideIp').textContent = masked;
-
           const loc = [data.city, data.region].filter(Boolean).join(', ');
           document.getElementById('sideLocation').textContent = loc || data.country || 'Location unknown';
         } else {
-          document.getElementById('sideIp').textContent = '\u2014.\u2014.xxx.xxx';
+          document.getElementById('sideIp').textContent       = '\u2014.\u2014.xxx.xxx';
           document.getElementById('sideLocation').textContent = 'Location unknown';
         }
       } catch(e) {
-        document.getElementById('sideIp').textContent = '\u2014.\u2014.xxx.xxx';
+        document.getElementById('sideIp').textContent       = '\u2014.\u2014.xxx.xxx';
         document.getElementById('sideLocation').textContent = 'Location unknown';
       }
     }
@@ -236,22 +442,20 @@
     function updateCorpus() {
       if (typeof fortuneArray === 'undefined') return;
       const total = fortuneArray.length;
-      document.getElementById('sideCorpusCount').textContent =
-        total.toLocaleString() + ' predictions';
-
+      document.getElementById('sideCorpusCount').textContent = total.toLocaleString() + ' predictions';
       const dates = fortuneArray
         .map(f => typeof f === 'string' ? '2026-03-15' : (f.added || '2026-03-15'))
         .sort().reverse();
       if (dates[0]) {
-        const d = new Date(dates[0]);
+        const d      = new Date(dates[0]);
         const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         const label  = months[d.getMonth()] + ' ' + d.getDate();
-        document.getElementById('sideLastEdit').textContent  = 'Last edit ' + label;
-        document.getElementById('statUpdated').textContent   = label;
+        document.getElementById('sideLastEdit').textContent = 'Last edit ' + label;
+        document.getElementById('statUpdated').textContent  = label;
       }
     }
 
-    // -- Fortune counter + reset timer ----------------------------------------
+    // -- Counter + reset timer ------------------------------------------------
     function updateCounter() {
       if (typeof fortuneArray === 'undefined') return;
       const total = fortuneArray.length;
@@ -262,7 +466,6 @@
         document.getElementById('fortuneNum').textContent   = '#' + String(n).padStart(4, '0');
         document.getElementById('fortuneDenom').textContent = '/ ' + total.toLocaleString();
         document.getElementById('statComplete').textContent = pct + '%';
-
         const ts = parseInt(localStorage.getItem('mf_seen_ts_v2'), 10);
         if (ts) {
           const msLeft = (ts + 7 * 24 * 60 * 60 * 1000) - Date.now();
@@ -275,9 +478,8 @@
       } catch(e) {}
     }
 
-    // -- Wire up clicks -------------------------------------------------------
+    // -- Init -----------------------------------------------------------------
     document.addEventListener('DOMContentLoaded', function() {
-      // Wrap myFunction to also update UI on each click
       const _orig = window.myFunction;
       window.myFunction = function() {
         _orig();
@@ -285,7 +487,6 @@
         updateCounter();
       };
 
-      // Body click cycles fortunes, but not the side panel or button
       document.getElementById('mainBody').addEventListener('click', function(e) {
         if (e.target.closest('.f-side')) return;
         if (e.target.closest('#newPredictionBtn')) return;
@@ -294,7 +495,6 @@
 
       document.getElementById('newPredictionBtn').addEventListener('click', myFunction);
 
-      // Init
       updateCorpus();
       updateCounter();
       updateSeverity();
