@@ -312,9 +312,9 @@
     user-select: none;
     -webkit-user-select: none;
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-    font-weight: 800;
+    font-weight: 700;
     font-size: clamp(20px, 3vw, 36px);
-    line-height: 1.05;
+    line-height: 1.1;
     letter-spacing: -0.03em;
     color: var(--text);
     word-break: break-word;
@@ -609,9 +609,9 @@
       </div>
       <div id="edit-form" style="display:none;">
         <label for="fortune-editor">edit fortune text</label>
-        <textarea id="fortune-editor" oninput="onEdit()" placeholder="Type fortune here. Use <br> for line breaks, <em> for italics."></textarea>
+        <textarea id="fortune-editor" oninput="onEdit()" placeholder="Type fortune here. Use <em>text</em> for italics."></textarea>
         <p class="hint" style="margin-top:8px;">
-          Use <code>&lt;em&gt;text&lt;/em&gt;</code> for <em>italics</em>
+          Use <code>&lt;em&gt;text&lt;/em&gt;</code> for <em>italics</em> &nbsp;·&nbsp; line breaks are ignored on the live site
         </p>
         <div id="date-row" style="margin-top:10px;">
           <label for="fortune-date">added</label>
