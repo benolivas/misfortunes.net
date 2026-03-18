@@ -65,6 +65,10 @@ $lines = array_map(function($fortune) use ($isOldFormat) {
             $added = '2026-03-15';
         }
     }
+    // Sanitize: collapse all whitespace/newlines to single space
+    $text = preg_replace('/[\r\n]+/', ' ', $text);
+    $text = preg_replace('/\s+/', ' ', $text);
+    $text = trim($text);
     // Escape backslashes first, then single quotes
     $escapedText = str_replace('\\', '\\\\', $text);
     $escapedText = str_replace("'", "\\'", $escapedText);

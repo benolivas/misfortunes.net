@@ -921,7 +921,9 @@ function onDateEdit() {
 
 function saveCurrent() {
   if (selectedIndex === null) return;
-  fortunes[selectedIndex].text  = document.getElementById('fortune-editor').value;
+  // Sanitize: collapse newlines and extra whitespace to single space
+  const raw = document.getElementById('fortune-editor').value;
+  fortunes[selectedIndex].text  = raw.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
   fortunes[selectedIndex].added = document.getElementById('fortune-date').value || todayISO();
   saveFortunes();
   renderList();
